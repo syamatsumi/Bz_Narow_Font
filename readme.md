@@ -1,4 +1,4 @@
-# Biなろうゴシック / Biなろう明朝
+# Bzなろうゴシック / Bzなろう明朝
 
 ユニバーサルデザインフォントの
 [BIZ UDゴシック](https://github.com/googlefonts/morisawa-biz-ud-gothic)
@@ -18,6 +18,10 @@
 Excelでコンデンスドフォントを使うと書式の設定がクッソめんどくさいので
 「これいっこ指定すれば文字詰め放題！」
 って状態にしたくって作りました。
+
+実際のところはFontForgeのストロークで発生する自己交差を解決するプロセスの方が価値あるかもねー。
+【Font Forge】自己交差を解消する方法 | Misskey.io
+https://misskey.io/@yamatsumi_s/pages/1732899206177
 
 
 ### ライセンス

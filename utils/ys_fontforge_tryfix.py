@@ -2,7 +2,8 @@
 
 import fontforge
 
-from .ys_fontforge_Remove_artifacts import ys_rm_small_poly
+from .ys_fontforge_Remove_artifacts import ys_rm_little_line, ys_rm_small_poly
+from .ys_fontforge_Repair_Self_Intersections import ys_repair_Self_Insec
 
 # 開いたパスを閉じて、閉じられないパスを捨てる関数
 def ys_closepath(glyph):
@@ -25,7 +26,173 @@ def ys_closepath(glyph):
     for contour in ok_paths:  # OKパスを書き戻す
         glyph.foreground += contour
     
-    contour.addExtrema("all")
+    glyph.addExtrema("all")
+
+
+
+def ys_repair_si_chain(glyph):
+    if glyph.validate(1) & 0x01:  # 開いたパスを検出
+        print(f"\r now:{glyph.glyphname:<15} Repairing an open path         ", end=" ", flush=True)
+        ys_closepath(glyph)  # パスを閉じる＆その他処理
+    ys_rm_little_line(glyph)  # 2点で構成されたパス(ゴミ)を削除
+
+    # 処理戻し用のバックアップを取得
+    glyph.round()  # 整数化
+    stroke_backup = [contour for contour in glyph.foreground]
+
+    if glyph.validate(1) & 0x20:  # 自己交差がある
+        print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 1 ", end=" ", flush=True)
+        glyph.foreground = fontforge.layer()
+        for contour in stroke_backup:
+            glyph.foreground += contour
+        ys_repair_Self_Insec(glyph, 1)
+        glyph.round()
+        glyph.removeOverlap()
+
+        if glyph.validate(1) & 0x20:
+            print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 2 ", end=" ", flush=True)
+            glyph.foreground = fontforge.layer()
+            for contour in stroke_backup:
+                glyph.foreground += contour
+            ys_repair_Self_Insec(glyph, 3)
+            glyph.round()
+            glyph.removeOverlap()
+
+            if glyph.validate(1) & 0x20:
+                print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 3 ", end=" ", flush=True)
+                glyph.foreground = fontforge.layer()
+                for contour in stroke_backup:
+                    glyph.foreground += contour
+                ys_repair_Self_Insec(glyph, 4)
+                glyph.round()
+                glyph.removeOverlap()
+
+                if glyph.validate(1) & 0x20:
+                    print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 4 ", end=" ", flush=True)
+                    glyph.foreground = fontforge.layer()
+                    for contour in stroke_backup:
+                        glyph.foreground += contour
+                    ys_repair_Self_Insec(glyph, 5)
+                    glyph.round()
+                    glyph.removeOverlap()
+
+                    if glyph.validate(1) & 0x20:
+                        print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 5 ", end=" ", flush=True)
+                        glyph.foreground = fontforge.layer()
+                        for contour in stroke_backup:
+                            glyph.foreground += contour
+                        ys_repair_Self_Insec(glyph, 6)
+                        glyph.round()
+                        glyph.removeOverlap()
+
+                        if glyph.validate(1) & 0x20:
+                            print(f"\r now:{glyph.glyphname:<15} Repair failure, rollback...    ", end=" ", flush=True)
+                            glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
+                            for contour in stroke_backup:  # 保存していたパスの書き戻し
+                                glyph.foreground += contour  # 修復試行前に戻す
+                            ys_repair_Self_Insec(glyph, 2)
+                            glyph.round()
+                            glyph.removeOverlap()
+    else:
+        ys_repair_Self_Insec(glyph, 2)
+        glyph.round()
+        glyph.removeOverlap()
+
+
+# 拡大縮小に伴う誤差でなおせないか試行錯誤してた頃のやつ
+def ys_rescale_chain(glyph):
+    glyph_backup = [contour for contour in glyph.foreground]
+
+    if glyph.validate(1) != 0:  # どれか一つでも引っかかった場合
+        previous_flags = glyph.validate(1)
+        glyph.transform((0.2, 0, 0, 1, 0, 0))
+        glyph.round()  # 整数化
+        glyph.addExtrema("all") # 極点を追加
+        glyph.removeOverlap()  # 結合
+        glyph.transform((5, 0, 0, 0.2, 0, 0))
+        glyph.round()  # 整数化
+        glyph.addExtrema("all") # 極点を追加
+        glyph.removeOverlap()  # 結合
+        glyph.transform((0.2, 0, 0, 1, 0, 0))
+        glyph.round()  # 整数化
+        glyph.addExtrema("all") # 極点を追加
+        glyph.removeOverlap()  # 結合
+        glyph.transform((5, 0, 0, 5, 0, 0))
+        current_flags = glyph.validate(1)
+        if (previous_flags & ~current_flags) != 0:  # フラグが「落ちた」場合
+            pass  # 何かしらの改善が見られたので終了。
+        else:
+            glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
+            for contour in glyph_backup:  # 保存していたパスの書き戻し
+                glyph.foreground += contour  # 修復試行前に戻す
+
+        # 次の悪足掻き
+            previous_flags = glyph.validate(1)
+            glyph.transform((1, 0, 0, 12.5, 0, 0))
+            ys_simplify(glyph)  # 単純化試行
+            ys_closepath(glyph)  # 開いたパスの修正
+            glyph.round()  # 整数化
+            glyph.addExtrema("all") # 極点を追加
+            glyph.removeOverlap()  # 結合
+            glyph.transform((12.5, 0, 0, 0.08, 0, 0))
+            ys_simplify(glyph)  # 単純化試行
+            ys_closepath(glyph)  # 開いたパスの修正
+            glyph.round()  # 整数化
+            glyph.addExtrema("all") # 極点を追加
+            glyph.removeOverlap()  # 結合
+            glyph.transform((1, 0, 0, 12.5, 0, 0))
+            ys_closepath(glyph)  # 開いたパスの修正
+            glyph.round()  # 整数化
+            glyph.addExtrema("all") # 極点を追加
+            glyph.removeOverlap()  # 結合
+            glyph.transform((0.08, 0, 0, 0.08, 0, 0))
+            current_flags = glyph.validate(1)
+            if (previous_flags & ~current_flags) != 0:  # フラグが「落ちた」場合
+                pass  # 何かしらの改善が見られたので終了。
+            else:
+                glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
+                for contour in glyph_backup:  # 保存していたパスの書き戻し
+                    glyph.foreground += contour  # 修復試行前に戻す
+            # さらに次の悪足掻き
+                previous_flags = glyph.validate(1)
+                glyph.transform((0.25, 0, 0, 1, 0, 0))
+                glyph.round()  # 整数化
+                glyph.addExtrema("all") # 極点を追加
+                glyph.removeOverlap()  # 結合
+                glyph.transform((4, 0, 0, 0.25, 0, 0))
+                glyph.round()  # 整数化
+                glyph.addExtrema("all") # 極点を追加
+                glyph.removeOverlap()  # 結合
+                glyph.transform((0.25, 0, 0, 1, 0, 0))
+                glyph.round()  # 整数化
+                glyph.addExtrema("all") # 極点を追加
+                glyph.removeOverlap()  # 結合
+                glyph.transform((4, 0, 0, 32, 0, 0))
+                ys_simplify(glyph)  # 単純化試行
+                ys_closepath(glyph)  # 開いたパスの修正
+                glyph.round()  # 整数化
+                glyph.addExtrema("all") # 極点を追加
+                glyph.removeOverlap()  # 結合
+                glyph.transform((8, 0, 0, 1, 0, 0))
+                ys_simplify(glyph)  # 単純化試行
+                ys_closepath(glyph)  # 開いたパスの修正
+                glyph.round()  # 整数化
+                glyph.addExtrema("all") # 極点を追加
+                glyph.removeOverlap()  # 結合
+                glyph.transform((1, 0, 0, 0.125, 0, 0))
+                ys_simplify(glyph)  # 単純化試行
+                ys_closepath(glyph)  # 開いたパスの修正
+                glyph.round()  # 整数化
+                glyph.addExtrema("all") # 極点を追加
+                glyph.removeOverlap()  # 結合
+                glyph.transform((0.125, 0, 0, 1, 0, 0))
+                current_flags = glyph.validate(1)
+                if (previous_flags & ~current_flags) != 0:  # フラグが「落ちた」場合
+                    pass  # 何かしらの改善が見られたので終了。
+                else:
+                    glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
+                    for contour in glyph_backup:  # 保存していたパスの書き戻し
+                        glyph.foreground += contour  # 修復試行前に戻す
 
 
 
@@ -72,92 +239,6 @@ def ys_simplify(glyph):
     #"mergelines",  # Merge adjacent lines into one
     #"setstarttoextremum",  # Rotate the point list so that the start point is on an extremum
     #"removesingletonpoints",  # If the contour contains just one point then remove it
-
-
-
-# 拡大縮小に伴う誤差でなおせないか試行錯誤してた頃のやつ
-def ys_rescale_chain(glyph):
-    glyph_backup = [contour for contour in glyph.foreground]
-
-    if glyph.validate(1) & 0x20:  # 自己交差がある場合
-        glyph.transform((0.2, 0, 0, 1, 0, 0))
-        glyph.round()  # 整数化
-        glyph.addExtrema("all") # 極点を追加
-        glyph.removeOverlap()  # 結合
-        glyph.transform((5, 0, 0, 0.2, 0, 0))
-        glyph.round()  # 整数化
-        glyph.addExtrema("all") # 極点を追加
-        glyph.removeOverlap()  # 結合
-        glyph.transform((0.2, 0, 0, 1, 0, 0))
-        glyph.round()  # 整数化
-        glyph.addExtrema("all") # 極点を追加
-        glyph.removeOverlap()  # 結合
-        glyph.transform((5, 0, 0, 5, 0, 0))
-        if glyph.validate(1) & 0x20:  # 自己交差を消せなかった場合は元に戻す
-            glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
-            for contour in glyph_backup:  # 保存していたパスの書き戻し
-                glyph.foreground += contour  # 修復試行前に戻す
-
-        # 次の悪足掻き
-            glyph.transform((1, 0, 0, 12.5, 0, 0))
-            ys_simplify(glyph)  # 単純化試行
-            ys_closepath(glyph)  # 開いたパスの修正
-            glyph.round()  # 整数化
-            glyph.addExtrema("all") # 極点を追加
-            glyph.removeOverlap()  # 結合
-            glyph.transform((12.5, 0, 0, 0.08, 0, 0))
-            ys_simplify(glyph)  # 単純化試行
-            ys_closepath(glyph)  # 開いたパスの修正
-            glyph.round()  # 整数化
-            glyph.addExtrema("all") # 極点を追加
-            glyph.removeOverlap()  # 結合
-            glyph.transform((1, 0, 0, 12.5, 0, 0))
-            ys_closepath(glyph)  # 開いたパスの修正
-            glyph.round()  # 整数化
-            glyph.addExtrema("all") # 極点を追加
-            glyph.removeOverlap()  # 結合
-            glyph.transform((0.08, 0, 0, 0.08, 0, 0))
-            if glyph.validate(1) & 0x20:  # 自己交差を消せなかった場合は元に戻す
-                glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
-                for contour in glyph_backup:  # 保存していたパスの書き戻し
-                    glyph.foreground += contour  # 修復試行前に戻す
-
-            # さらに次の悪足掻き
-                glyph.transform((0.25, 0, 0, 1, 0, 0))
-                glyph.round()  # 整数化
-                glyph.addExtrema("all") # 極点を追加
-                glyph.removeOverlap()  # 結合
-                glyph.transform((4, 0, 0, 0.25, 0, 0))
-                glyph.round()  # 整数化
-                glyph.addExtrema("all") # 極点を追加
-                glyph.removeOverlap()  # 結合
-                glyph.transform((0.25, 0, 0, 1, 0, 0))
-                glyph.round()  # 整数化
-                glyph.addExtrema("all") # 極点を追加
-                glyph.removeOverlap()  # 結合
-                glyph.transform((4, 0, 0, 32, 0, 0))
-                ys_simplify(glyph)  # 単純化試行
-                ys_closepath(glyph)  # 開いたパスの修正
-                glyph.round()  # 整数化
-                glyph.addExtrema("all") # 極点を追加
-                glyph.removeOverlap()  # 結合
-                glyph.transform((8, 0, 0, 1, 0, 0))
-                ys_simplify(glyph)  # 単純化試行
-                ys_closepath(glyph)  # 開いたパスの修正
-                glyph.round()  # 整数化
-                glyph.addExtrema("all") # 極点を追加
-                glyph.removeOverlap()  # 結合
-                glyph.transform((1, 0, 0, 0.125, 0, 0))
-                ys_simplify(glyph)  # 単純化試行
-                ys_closepath(glyph)  # 開いたパスの修正
-                glyph.round()  # 整数化
-                glyph.addExtrema("all") # 極点を追加
-                glyph.removeOverlap()  # 結合
-                glyph.transform((0.125, 0, 0, 1, 0, 0))
-                if glyph.validate(1) & 0x20:  # 自己交差を消せなかった場合は元に戻す
-                    glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
-                    for contour in glyph_backup:  # 保存していたパスの書き戻し
-                        glyph.foreground += contour  # 修復試行前に戻す
 
 
 

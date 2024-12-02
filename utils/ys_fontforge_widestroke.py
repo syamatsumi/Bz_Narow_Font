@@ -2,13 +2,9 @@
 
 import fontforge
 
+from .ys_fontforge_Remove_artifacts import ys_rm_little_line, ys_rm_small_poly
 from .ys_fontforge_Repair_Self_Intersections import ys_repair_Self_Insec
-from .ys_fontforge_Remove_artifacts import ys_rm_small_poly
-from .ys_fontforge_Remove_artifacts import ys_rm_little_line
-from .ys_fontforge_Remove_artifacts import ys_rm_small_poly
-from .ys_fontforge_tryfix import ys_closepath
-from .ys_fontforge_tryfix import ys_simplify
-from .ys_fontforge_tryfix import ys_rescale_chain
+from .ys_fontforge_tryfix import ys_closepath, ys_repair_si_chain, ys_rescale_chain, ys_simplify
 
 # 幅ストロークを加える
 def ys_widestroke(stroke_width, storoke_height, glyph):
@@ -39,22 +35,10 @@ def ys_widestroke(stroke_width, storoke_height, glyph):
         arcsclip="ratio"  # Default="auto" "arcs" "svg2" "ratio"
     )
 
-    # 元のグリフと合成
-    if glyph.validate(1) & 0x01:  # 開いたパスを検出
-        ys_closepath(glyph)  # パスを閉じる＆その他処理
-    ys_rm_little_line(glyph)  # 2点で構成されたパス(ゴミ)を削除
-    ys_repair_Self_Insec(glyph, 1)  # 1度以下の角度の点を移動
-    if glyph.validate(1) & 0x20:  # まだ自己交差がある
-        ys_repair_Self_Insec(glyph, 2)  # 2度以下の角度の奴を潰す。
-        if glyph.validate(1) & 0x20:
-            ys_repair_Self_Insec(glyph, 3)
-            if glyph.validate(1) & 0x20:
-                ys_repair_Self_Insec(glyph, 4)
-                if glyph.validate(1) & 0x20:
-                    ys_repair_Self_Insec(glyph, 5)
-                    if glyph.validate(1) & 0x20:
-                        ys_repair_Self_Insec(glyph, 6)
+    # 自己交差の修復試行。直らなくても2度のツノは折る。
+    ys_repair_si_chain(glyph)
 
+    # 元のグリフと合成
     ys_rm_small_poly(20, 20, glyph) # 小さなゴミを除去
     for contour in glyph_backup:  # 保存していたパスの書き戻し
         glyph.foreground += contour
@@ -64,26 +48,12 @@ def ys_widestroke(stroke_width, storoke_height, glyph):
                 contour.reverseDirection()  # パスを反転させる
     glyph.removeOverlap()  # 結合
 
-    # 修復試行
-    if glyph.validate(1) & 0x01:
-        ys_closepath(glyph)
-    if glyph.validate(1) & 0x20:
-        ys_repair_Self_Insec(glyph, 1) 
-        if glyph.validate(1) & 0x20:
-            ys_repair_Self_Insec(glyph, 2)
-            if glyph.validate(1) & 0x20:
-                ys_repair_Self_Insec(glyph, 3)
-                if glyph.validate(1) & 0x20:
-                    ys_repair_Self_Insec(glyph, 4)
-                    if glyph.validate(1) & 0x20:
-                        ys_repair_Self_Insec(glyph, 5)
-                        if glyph.validate(1) & 0x20:
-                            ys_repair_Self_Insec(glyph, 6)
-        glyph.removeOverlap()  # 結合
+    ys_repair_si_chain(glyph) # 結合後の修復試行
 
     # ゴミ掃除
+    print(f"\r now:{glyph.glyphname:<15} Cleaning small pieces.         ", end=" ", flush=True)
     ys_rm_little_line(glyph)  # 2点で構成されたパス(ゴミ)を削除
-    ys_rm_small_poly(20, 20, glyph)
+    ys_rm_small_poly(20, 20, glyph)  # 小さなゴミを削除
     glyph.addExtrema("all") # 極点を追加
 
 
