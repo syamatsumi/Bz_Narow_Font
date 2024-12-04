@@ -207,33 +207,13 @@ def main():
         glyph.transform((VSHRINK_RATIO, 0, 0, 1, 0, 0))
         glyph.addExtrema("all")
         
-    # 半角フォントのグリフ幅を設定する
+    # 半角フォントのグリフ幅を設定する(念の為って性格が強い)
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Half-width processing     \r", end=" ", flush=True)
-        if halfwidth_glyph_flag and not style_is_prop:
-            glyph.width = round(em_size / 2 * VSHRINK_RATIO)
-        else:
-            glyph.width = round(em_size * VSHRINK_RATIO)
-    
-    # プロポーショナルフォント幅を設定する。
-    # サイドベアリングがemサイズの1/SIDEBEARING_DIVISOR以上なら、それ以下に縮める。
-    # スペースみたいなコンターの無いグリフは元に戻す。
-        if style_is_prop:
-            print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} proportional processing   \r", end=" ", flush=True)
-            glyph.round()
-            originalwidth = glyph.width  # スペースとかのために縮める前の幅を確保
-            glyph.removeOverlap()
-            bbox = glyph.boundingBox()
-            xmin, ymin, xmax, ymax = bbox
-            maxbear = em_size / PROPOTIONAL_SIDEBEARING_DIVISOR
-            if xmin < maxbear:
-                glyph.transform(psMat.translate(maxbear - xmin, 0))
-            glyph.addExtrema("all")
-            bbox = glyph.boundingBox()
-            xmin, ymin, xmax, ymax = bbox
-            glyph.width = round(xmax + maxbear) # グリフ幅を拡縮
-            
-            if glyph.width == maxbear * 2:
-                glyph.width = originalwidth
+        if not style_is_prop:
+            if halfwidth_glyph_flag:
+                glyph.width = round(em_size / 2 * VSHRINK_RATIO)
+            else:
+                glyph.width = round(em_size * VSHRINK_RATIO)
 
     # 最後にTTFの仕様に合わせた最適化を実施
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Finish optimization       \r", end=" ", flush=True)
