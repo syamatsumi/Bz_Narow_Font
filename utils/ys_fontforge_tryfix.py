@@ -32,7 +32,7 @@ def ys_closepath(glyph):
 
 def ys_repair_si_chain(glyph):
     if glyph.validate(1) & 0x01:  # 開いたパスを検出
-        print(f"\r now:{glyph.glyphname:<15} Repairing an open path         ", end=" ", flush=True)
+        print(f"\r now:{glyph.glyphname:<15} Repairing an open path          \r", end=" ", flush=True)
         ys_closepath(glyph)  # パスを閉じる＆その他処理
     ys_rm_little_line(glyph)  # 2点で構成されたパス(ゴミ)を削除
 
@@ -41,16 +41,13 @@ def ys_repair_si_chain(glyph):
     stroke_backup = [contour for contour in glyph.foreground]
 
     if glyph.validate(1) & 0x20:  # 自己交差がある
-        print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 1 ", end=" ", flush=True)
-        glyph.foreground = fontforge.layer()
-        for contour in stroke_backup:
-            glyph.foreground += contour
+        print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 1  \r", end=" ", flush=True)
         ys_repair_Self_Insec(glyph, 1)
         glyph.round()
         glyph.removeOverlap()
 
         if glyph.validate(1) & 0x20:
-            print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 2 ", end=" ", flush=True)
+            print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 2  \r", end=" ", flush=True)
             glyph.foreground = fontforge.layer()
             for contour in stroke_backup:
                 glyph.foreground += contour
@@ -59,7 +56,7 @@ def ys_repair_si_chain(glyph):
             glyph.removeOverlap()
 
             if glyph.validate(1) & 0x20:
-                print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 3 ", end=" ", flush=True)
+                print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 3  \r", end=" ", flush=True)
                 glyph.foreground = fontforge.layer()
                 for contour in stroke_backup:
                     glyph.foreground += contour
@@ -68,7 +65,7 @@ def ys_repair_si_chain(glyph):
                 glyph.removeOverlap()
 
                 if glyph.validate(1) & 0x20:
-                    print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 4 ", end=" ", flush=True)
+                    print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 4  \r", end=" ", flush=True)
                     glyph.foreground = fontforge.layer()
                     for contour in stroke_backup:
                         glyph.foreground += contour
@@ -77,7 +74,7 @@ def ys_repair_si_chain(glyph):
                     glyph.removeOverlap()
 
                     if glyph.validate(1) & 0x20:
-                        print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 5 ", end=" ", flush=True)
+                        print(f"\r now:{glyph.glyphname:<15} Repairing self-intersections 5  \r", end=" ", flush=True)
                         glyph.foreground = fontforge.layer()
                         for contour in stroke_backup:
                             glyph.foreground += contour
@@ -86,7 +83,7 @@ def ys_repair_si_chain(glyph):
                         glyph.removeOverlap()
 
                         if glyph.validate(1) & 0x20:
-                            print(f"\r now:{glyph.glyphname:<15} Repair failure, rollback...    ", end=" ", flush=True)
+                            print(f"\r now:{glyph.glyphname:<15} Repair failure, rollback...     \r", end=" ", flush=True)
                             glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
                             for contour in stroke_backup:  # 保存していたパスの書き戻し
                                 glyph.foreground += contour  # 修復試行前に戻す

@@ -92,15 +92,15 @@ at: http://scripts.sil.org/OFL""",
         ("English (US)", "Version", VERSION),
     )
 
-    font.familyname = f"{FONT_FAMILY} {serif_type_e}"
+    font.familyname = f"{FONT_FAMILY} {serif_type_e}{ratio}"
     font.fontname = f"{FONT_FAMILY}{type_p}{serif_type_e}{ratio}-{weight}".replace(" ", "").strip()
     font.fullname = f"{FONT_FAMILY_JP}{type_p}{serif_type_j}{ratio} {weight}"
     font.os2_vendor = VENDOR_NAME
     font.uniqueid = -1
     font.copyright = COPYRIGHT
 
-    font.appendSFNTName("Japanese", "Family", f"{FONT_FAMILY_JP}{type_p}{serif_type_j}")
-    font.appendSFNTName("Japanese", "SubFamily", f"{ratio} {weight}")
+    font.appendSFNTName("Japanese", "Family", f"{FONT_FAMILY_JP}{type_p}{serif_type_j}{ratio}")
+    font.appendSFNTName("Japanese", "SubFamily", f"{weight}")
     # font.appendSFNTName("Japanese", "UniqueID", )
     font.appendSFNTName("Japanese", "Fullname", font.fullname)
     font.appendSFNTName("Japanese", "Version", VERSION)

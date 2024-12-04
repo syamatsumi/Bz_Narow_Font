@@ -1,29 +1,86 @@
 #!fontforge --lang=py -script
 
 import fontforge
+import psMat
 
 from .ys_fontforge_Remove_artifacts import ys_rm_little_line, ys_rm_small_poly
-from .ys_fontforge_Repair_Self_Intersections import ys_repair_Self_Insec
+from .ys_fontforge_Repair_Self_Intersections import ys_repair_Self_Insec, ys_sawtooth_reduction
 from .ys_fontforge_tryfix import ys_closepath, ys_repair_si_chain, ys_rescale_chain, ys_simplify
 
-# •ƒXƒgƒ[ƒN‚ğ‰Á‚¦‚é
+
+
+# æ¨ªã«ãšã‚‰ã—ã¦å¹…ã‚’åºƒã’ã‚‹
+def ys_widepaste(rwidth, glyph):
+
+    # å…ƒã®ã‚°ãƒªãƒ•ã‚’æ•´æ•°åŒ–ã—ã¦ã‹ã‚‰ãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—
+    glyph.round()
+    glyph_temp = glyph.foreground
+
+    
+    i = 0
+    j = 1
+    k = 0
+    while rwidth * 2 > i:
+        # ãƒ¬ã‚¤ãƒ¤ã‚’ã‚«ãƒ©ã«ã™ã‚‹
+        glyph.foreground = fontforge.layer()
+
+        # ä¸€æ™‚ã‚³ãƒ³ã‚¿ãƒ¼ã‚’æ›¸ãå‡ºã™
+        for contour in glyph_temp:
+            glyph.foreground += contour 
+        glyph.transform(psMat.translate(j , 0))
+        for contour in glyph_temp:
+            glyph.foreground += contour 
+
+        # çµåˆã¨ã‹
+        glyph.round()
+        glyph.removeOverlap()
+        glyph.simplify(0.1)
+
+        # åˆæˆå¾Œã®ã‚°ãƒªãƒ•ã‚’ä¿ç®¡
+        glyph_temp = glyph.foreground
+
+        # ç§»å‹•ã—ãŸè·é›¢ã®åˆè¨ˆ
+        i += j
+
+        # æ¬¡ã«å‹•ã‹ã™ç§»å‹•é‡ã‚’å¢—åŠ ã•ã›ã‚‹
+        j += j
+
+        # æ™®é€šã®ã‚¤ãƒ³ã‚¯ãƒªãƒ¡ãƒ³ãƒˆ
+        k = k + 1
+        
+        ys_sawtooth_reduction(glyph)
+
+    # å³ã«åºƒã’ãŸåˆ†ã ã‘ä¸­å¿ƒãŒã‚ºãƒ¬ã‚‹ã®ã§å·¦ã«ãšã‚‰ã™
+    glyph.transform(psMat.translate( - i / 2 , 0))
+
+    # ã‚´ãƒŸæƒé™¤
+    ys_rm_little_line(glyph)  # åˆæˆæ™‚ã«ç™ºç”Ÿã—ãŸ2ç‚¹ã§æ§‹æˆã•ã‚ŒãŸãƒ‘ã‚¹(ã‚´ãƒŸ)ã‚’å‰Šé™¤
+    ys_rm_small_poly(20, 20, glyph)  # å°ã•ãªã‚´ãƒŸã‚’å‰Šé™¤
+    glyph.round()  # æ•´æ•°åŒ–
+    glyph.removeOverlap()
+    glyph.addExtrema("all") # æ¥µç‚¹ã‚’è¿½åŠ 
+
+
+
+
+# å¹…ã‚¹ãƒˆãƒ­ãƒ¼ã‚¯ã‚’åŠ ãˆã‚‹
 def ys_widestroke(stroke_width, storoke_height, glyph):
     glyph_backup = [contour for contour in glyph.foreground]
 
-    #‘S‚Ä‚ÌƒXƒgƒ[ƒN‚ª”½Œv‰ñ‚è‚Ìê‡ƒtƒ‰ƒO—§‚Ä
+    #å…¨ã¦ã®ã‚¹ãƒˆãƒ­ãƒ¼ã‚¯ãŒåæ™‚è¨ˆå›ã‚Šã®å ´åˆãƒ•ãƒ©ã‚°ç«‹ã¦
     is_all_ccw = True
-    for contour in glyph.foreground:  # ŠeƒpƒXi—ÖŠsj‚ğƒ‹[ƒv
+    for contour in glyph.foreground:  # å„ãƒ‘ã‚¹ï¼ˆè¼ªéƒ­ï¼‰ã‚’ãƒ«ãƒ¼ãƒ—
         if contour.isClockwise():
             is_all_ccw = False
-            break  # 1‚Â‚Å‚àŒv‰ñ‚è‚È‚çŠm”F‚ğI—¹
+            break  # 1ã¤ã§ã‚‚æ™‚è¨ˆå›ã‚Šãªã‚‰ç¢ºèªã‚’çµ‚äº†
 
     glyph.stroke("elliptical", stroke_width, storoke_height, 0, "round", "miterclip",
         # "circular", width[, CAP, JOIN, ANGLE, KEYWORD],
         # "elliptical", width, minor_width[, ANGLE, CAP, JOIN, KEYWORD],
         # "calligraphic", width, height[, ANGLE, CAP, JOIN, KEYWORD],
         # "convex", contour[, ANGLE, CAP, JOIN, KEYWORD],
-        removeinternal=False,  # Default=False (‘¾‚ç‚¹ˆ—)
-        removeexternal=False,  # Default=False (×‚ç‚¹ˆ—)
+        removeinternal=False,  # Default=False (å¤ªã‚‰ã›å‡¦ç†)
+        removeexternal=False,  # Default=False (ç´°ã‚‰ã›å‡¦ç†)
         extrema=False,  # Default=True
         simplify=False,  # Default=True
         removeoverlap="none",  # Default="layer" "contour" "none"
@@ -35,26 +92,26 @@ def ys_widestroke(stroke_width, storoke_height, glyph):
         arcsclip="ratio"  # Default="auto" "arcs" "svg2" "ratio"
     )
 
-    # ©ŒÈŒğ·‚ÌC•œsB’¼‚ç‚È‚­‚Ä‚à2“x‚Ìƒcƒm‚ÍÜ‚éB
+    # è‡ªå·±äº¤å·®ã®ä¿®å¾©è©¦è¡Œã€‚ç›´ã‚‰ãªãã¦ã‚‚2åº¦ã®ãƒ„ãƒã¯æŠ˜ã‚‹ã€‚
     ys_repair_si_chain(glyph)
 
-    # Œ³‚ÌƒOƒŠƒt‚Æ‡¬
-    ys_rm_small_poly(20, 20, glyph) # ¬‚³‚ÈƒSƒ~‚ğœ‹
-    for contour in glyph_backup:  # •Û‘¶‚µ‚Ä‚¢‚½ƒpƒX‚Ì‘‚«–ß‚µ
+    # å…ƒã®ã‚°ãƒªãƒ•ã¨åˆæˆ
+    ys_rm_small_poly(20, 20, glyph) # å°ã•ãªã‚´ãƒŸã‚’é™¤å»
+    for contour in glyph_backup:  # ä¿å­˜ã—ã¦ã„ãŸãƒ‘ã‚¹ã®æ›¸ãæˆ»ã—
         glyph.foreground += contour
-    if is_all_ccw:  # Œ³X’ÊíƒpƒX(CCW)‚µ‚©–³‚¢ƒOƒŠƒt‚Ìê‡
+    if is_all_ccw:  # å…ƒã€…é€šå¸¸ãƒ‘ã‚¹(CCW)ã—ã‹ç„¡ã„ã‚°ãƒªãƒ•ã®å ´åˆ
         for contour in glyph.foreground:
-            if contour.isClockwise():  # ”½“]ƒpƒX(CW)‚Ìê‡
-                contour.reverseDirection()  # ƒpƒX‚ğ”½“]‚³‚¹‚é
-    glyph.removeOverlap()  # Œ‹‡
+            if contour.isClockwise():  # åè»¢ãƒ‘ã‚¹(CW)ã®å ´åˆ
+                contour.reverseDirection()  # ãƒ‘ã‚¹ã‚’åè»¢ã•ã›ã‚‹
+    glyph.removeOverlap()  # çµåˆ
 
-    ys_repair_si_chain(glyph) # Œ‹‡Œã‚ÌC•œs
+    ys_repair_si_chain(glyph) # çµåˆå¾Œã®ä¿®å¾©è©¦è¡Œ
 
-    # ƒSƒ~‘|œ
+    # ã‚´ãƒŸæƒé™¤
     print(f"\r now:{glyph.glyphname:<15} Cleaning small pieces.         ", end=" ", flush=True)
-    ys_rm_little_line(glyph)  # 2“_‚Å\¬‚³‚ê‚½ƒpƒX(ƒSƒ~)‚ğíœ
-    ys_rm_small_poly(20, 20, glyph)  # ¬‚³‚ÈƒSƒ~‚ğíœ
-    glyph.addExtrema("all") # ‹É“_‚ğ’Ç‰Á
+    ys_rm_little_line(glyph)  # 2ç‚¹ã§æ§‹æˆã•ã‚ŒãŸãƒ‘ã‚¹(ã‚´ãƒŸ)ã‚’å‰Šé™¤
+    ys_rm_small_poly(20, 20, glyph)  # å°ã•ãªã‚´ãƒŸã‚’å‰Šé™¤
+    glyph.addExtrema("all") # æ¥µç‚¹ã‚’è¿½åŠ 
 
 
 
