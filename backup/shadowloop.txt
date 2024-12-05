@@ -1,0 +1,70 @@
+
+
+def ffshadowloop(font, temp_file_path):
+    selected_glyph_names = []  # 選別対象のグリフ名を格納するリスト
+
+    ffscr = os.path.join(BUILD_FONTS_DIR, FFSCR)  # FontForge、Pyじゃない方
+    ffscr = os.path.abspath(ffscr)  # 絶対パスに変換
+
+    print(f"Fontforgeのフルパス：{ffscr} ", flush=True)
+
+    json_file = f"{OUTPUT_NAME}.json"
+    json_file_path = os.path.join(BUILD_FONTS_DIR, json_file)
+    json_file_path = os.path.abspath(json_file_path)  # 絶対パスに変換
+    print(f"json：{json_file_path} ", flush=True)
+
+    pe_file = f"{OUTPUT_NAME}.pe"
+    pe_file_path = os.path.join(BUILD_FONTS_DIR, pe_file)
+    pe_file_path = os.path.abspath(pe_file_path)  # 絶対パスに変換
+    print(f"peFile：{pe_file_path} ", flush=True)
+
+    temp_file_path = os.path.abspath(temp_file_path)  # 絶対パスに変換
+    print(f"tempfile：{temp_file_path} ", flush=True)
+    print([ffscr, "-script", "pe_file_path"], flush=True)  # 引数を確認
+
+    i = 0
+    for glyph in font.glyphs():  # 全グリフをループ処理
+        if not glyph.isWorthOutputting():
+            print(f"\r 出力しないグリフをスキップ： {glyph.glyphname}", end=" ", flush=True)
+            continue
+        if len(glyph.references) > 0:
+            print(f"\r 合成グリフをスキップ： {glyph.glyphname}", end=" ", flush=True)
+            continue
+        i += 1
+        print(f"\r now:{i:<6}:{glyph.glyphname:<15} addshadow trying          ", end=" ", flush=True)
+        glyph.background = glyph.foreground  # バックグラウンドにグリフをコピー
+        # 選別されたグリフをリストに追加
+        selected_glyph_names.append(glyph.glyphname)
+        # 選択中のグリフ名をJSONに書き出し
+        with open(f"{json_file_path}", "w") as json_file:
+            json.dump(selected_glyph_names, json_file)
+
+    # FFスクリプトを生成
+    ff_script = """
+Open("{path}")
+Clear()
+# JSONからグリフリストを読み込む
+local json = GetFileName("selected_glyphs.json");
+local glyph_list = JsonParse(json);
+
+# 対象グリフだけにShadowを適用
+foreach glyphname (glyph_list)
+    Select(glyphname);
+    Shadow(90, 0, 80);
+endloop
+
+Save("{path}")
+Close()
+    """.format(path=temp_file_path)
+    with open(f"{pe_file_path}", "w") as script_file:
+        script_file.write(ff_script)
+    
+    print(f"選別されたグリフ: {len(selected_glyph_names)}個")
+    font.save(temp_file_path)   # フォントを一時保存
+
+    # FFスクリプトをFontForgeで実行
+    subprocess.run([ffscr, "-script", pe_file_path])
+    print("Shadow処理が完了しました")
+
+
+

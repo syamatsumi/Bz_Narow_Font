@@ -1,8 +1,17 @@
-# FontForgeを実行
-$fontforge = "C:\Program Files (x86)\FontForgeBuilds\bin\ffpython.exe"
+$iniFile = "bz_narow.ini"
+$config = @{}
+Get-Content $iniFile | ForEach-Object {
+    if ($_ -match '^([^#;]+)=(.+)$') {
+        $key = $matches[1].Trim()
+        $value = $matches[2].Trim()
+        $config[$key] = $value
+}   }
 $scr = "bz_narow.py"
+$ffpy = $($config['ffpy'])
+$ffscr = $($config['ffscr'])
 
-& $fontforge $scr PゴシR BzなろうPゴシック30-Regular 0.3
-& $fontforge $scr PゴシB BzなろうPゴシック30-Bold 0.3
-& $fontforge $scr PミンR BzなろうP明朝30-Regular 0.3
-& $fontforge $scr PミンB BzなろうP明朝30-Bold 0.3
+
+& $ffpy $scr PゴシR BzなろうPゴシック30-Regular 0.3
+#& $ffpy $scr PゴシB BzなろうPゴシック30-Bold 0.3
+#& $ffpy $scr PミンR BzなろうP明朝30-Regular 0.3
+#& $ffpy $scr PミンB BzなろうP明朝30-Bold 0.3

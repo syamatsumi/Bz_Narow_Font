@@ -1,36 +1,38 @@
-# FontForgeを実行
-$fontforge = "C:\Program Files (x86)\FontForgeBuilds\bin\ffpython.exe"
-
+pause
 # 実行するコマンドのリスト
 $commands = @(
-    "bz_narow.py MゴシR Bzなろうゴシック90-Regular 0.9",
-    "bz_narow.py MゴシR Bzなろうゴシック75-Regular 0.75",
-    "bz_narow.py MゴシR Bzなろうゴシック50-Regular 0.5",
-    "bz_narow.py MゴシB Bzなろうゴシック90-Bold 0.9",
-    "bz_narow.py MゴシB Bzなろうゴシック75-Bold 0.75",
-    "bz_narow.py MゴシB Bzなろうゴシック50-Bold 0.5",
-    "bz_narow.py PゴシR BzなろうPゴシック90-Regular 0.9",
-    "bz_narow.py PゴシR BzなろうPゴシック75-Regular 0.75",
-    "bz_narow.py PゴシR BzなろうPゴシック50-Regular 0.5",
-    "bz_narow.py PゴシB BzなろうPゴシック90-Bold 0.9",
-    "bz_narow.py PゴシB BzなろうPゴシック75-Bold 0.75",
-    "bz_narow.py PゴシB BzなろうPゴシック50-Bold 0.5",
-    "bz_narow.py MミンR Bzなろう明朝90-Regular 0.9",
-    "bz_narow.py MミンR Bzなろう明朝75-Regular 0.75",
-    "bz_narow.py MミンR Bzなろう明朝50-Regular 0.5",
-    "bz_narow.py MミンB Bzなろう明朝90-Bold 0.9",
-    "bz_narow.py MミンB Bzなろう明朝75-Bold 0.75",
-    "bz_narow.py MミンB Bzなろう明朝50-Bold 0.5",
-    "bz_narow.py PミンR BzなろうP明朝90-Regular 0.9",
-    "bz_narow.py PミンR BzなろうP明朝75-Regular 0.75",
-    "bz_narow.py PミンR BzなろうP明朝50-Regular 0.5",
-    "bz_narow.py PミンB BzなろうP明朝90-Bold 0.9",
-    "bz_narow.py PミンB BzなろうP明朝75-Bold 0.75",
-    "bz_narow.py PミンB BzなろうP明朝50-Bold 0.5"
+"bz_narow.py MゴシR Bzなろうゴシック90-Regular 0.9",
+"bz_narow.py MゴシR Bzなろうゴシック75-Regular 0.75",
+"bz_narow.py MゴシR Bzなろうゴシック50-Regular 0.5",
+"bz_narow.py MゴシB Bzなろうゴシック90-Bold 0.9",
+"bz_narow.py MゴシB Bzなろうゴシック75-Bold 0.75",
+"bz_narow.py MゴシB Bzなろうゴシック50-Bold 0.5",
+"bz_narow.py PゴシR BzなろうPゴシック90-Regular 0.9",
+"bz_narow.py PゴシR BzなろうPゴシック75-Regular 0.75",
+"bz_narow.py PゴシR BzなろうPゴシック50-Regular 0.5",
+"bz_narow.py PゴシR BzなろうPゴシック30-Regular 0.3",
+"bz_narow.py PゴシB BzなろうPゴシック90-Bold 0.9",
+"bz_narow.py PゴシB BzなろうPゴシック75-Bold 0.75",
+"bz_narow.py PゴシB BzなろうPゴシック50-Bold 0.5",
+"bz_narow.py PゴシB BzなろうPゴシック30-Bold 0.3",
+"bz_narow.py MミンR Bzなろう明朝90-Regular 0.9",
+"bz_narow.py MミンR Bzなろう明朝75-Regular 0.75",
+"bz_narow.py MミンR Bzなろう明朝50-Regular 0.5",
+"bz_narow.py MミンB Bzなろう明朝90-Bold 0.9",
+"bz_narow.py MミンB Bzなろう明朝75-Bold 0.75",
+"bz_narow.py MミンB Bzなろう明朝50-Bold 0.5",
+"bz_narow.py PミンR BzなろうP明朝90-Regular 0.9",
+"bz_narow.py PミンR BzなろうP明朝75-Regular 0.75",
+"bz_narow.py PミンR BzなろうP明朝50-Regular 0.5",
+"bz_narow.py PミンR BzなろうP明朝30-Regular 0.3",
+"bz_narow.py PミンB BzなろうP明朝90-Bold 0.9",
+"bz_narow.py PミンB BzなろうP明朝75-Bold 0.75",
+"bz_narow.py PミンB BzなろうP明朝50-Bold 0.5",
+"bz_narow.py PミンB BzなろうP明朝30-Bold 0.3"
 )
 
 # 最大同時実行数
-$maxParallel = 8
+$maxParallel = 10
 
 # 実行中のプロセスを管理
 $runningJobs = @()
@@ -50,10 +52,20 @@ foreach ($command in $commands) {
         continue
     }
 
+    $iniFile = "bz_narow.ini"
+    $config = @{}
+    Get-Content $iniFile | ForEach-Object {
+        if ($_ -match '^([^#;]+)=(.+)$') {
+            $key = $matches[1].Trim()
+            $value = $matches[2].Trim()
+            $config[$key] = $value
+    }   }
+    $ffpy = $($config['ffpy'])
+
     # コマンドを実行
-    Write-Host "Executing: $fontforge $args"
+    Write-Host "Executing: $ffpy $args"
     try {
-        $process = Start-Process -FilePath $fontforge -ArgumentList $args -NoNewWindow -PassThru -ErrorAction 'Continue'
+        $process = Start-Process -FilePath $ffpy -ArgumentList $args -NoNewWindow -PassThru -ErrorAction 'Continue'
         $runningJobs += $process
     } catch {
         Write-Warning "Start-Process に失敗: $_"
