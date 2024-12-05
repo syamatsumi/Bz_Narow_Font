@@ -175,29 +175,6 @@ def ys_upper_vector_offsetter(contour, offset):
 
 # 幅ストロークを加える
 def ys_widestroke(glyph, stroke_width, storoke_height):
-    # これらは処理から除外。
-    if glyph.glyphname == "uni2756": return   #   ❖  10070   2756
-    if glyph.glyphname == "uni2776": return   #   ❶  10102   2776
-    if glyph.glyphname == "uni2777": return   #   ❷  10103   2777
-    if glyph.glyphname == "uni2778": return   #   ❸  10104   2778
-    if glyph.glyphname == "uni2779": return   #   ❹  10105   2779
-    if glyph.glyphname == "uni277A": return   #   ❺  10106   277A
-    if glyph.glyphname == "uni277B": return   #   ❻  10107   277B
-    if glyph.glyphname == "uni277C": return   #   ❼  10108   277C
-    if glyph.glyphname == "uni277D": return   #   ❽  10109   277D
-    if glyph.glyphname == "uni277E": return   #   ❾  10110   277E
-    if glyph.glyphname == "uni277F": return   #   ❿  10111   277F
-    if glyph.glyphname == "uni24EB": return   #   ⓫  9451    24EB
-    if glyph.glyphname == "uni24EC": return   #   ⓬  9452    24EC
-    if glyph.glyphname == "uni24ED": return   #   ⓭  9453    24ED
-    if glyph.glyphname == "uni24EE": return   #   ⓮  9454    24EE
-    if glyph.glyphname == "uni24EF": return   #   ⓯  9455    24EF
-    if glyph.glyphname == "uni24F0": return   #   ⓰  9456    24F0
-    if glyph.glyphname == "uni24F1": return   #   ⓱  9457    24F1
-    if glyph.glyphname == "uni24F2": return   #   ⓲  9458    24F2
-    if glyph.glyphname == "uni24F3": return   #   ⓳  9459    24F3
-    if glyph.glyphname == "uni24F4": return   #   ⓴  9460    24F4
-    
     glyph_backup = [contour.dup() for contour in glyph.foreground]
     #全てのストロークが反時計回りの場合フラグ立て
     is_all_ccw = True

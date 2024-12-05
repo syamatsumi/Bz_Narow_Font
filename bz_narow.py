@@ -280,6 +280,29 @@ def main():
         if len(glyph.references) > 0:
             print(f"\r 合成グリフをスキップ： {glyph.glyphname}", end=" ", flush=True)
             continue
+        ep = True
+        if glyph.glyphname == ["uni2756"]:  ep = False  #   ❖  10070   2756
+        if glyph.glyphname == ["uni2776"]:  ep = False  #   ❶  10102   2776
+        if glyph.glyphname == ["uni2777"]:  ep = False  #   ❷  10103   2777
+        if glyph.glyphname == ["uni2778"]:  ep = False  #   ❸  10104   2778
+        if glyph.glyphname == ["uni2779"]:  ep = False  #   ❹  10105   2779
+        if glyph.glyphname == ["uni277A"]:  ep = False  #   ❺  10106   277A
+        if glyph.glyphname == ["uni277B"]:  ep = False  #   ❻  10107   277B
+        if glyph.glyphname == ["uni277C"]:  ep = False  #   ❼  10108   277C
+        if glyph.glyphname == ["uni277D"]:  ep = False  #   ❽  10109   277D
+        if glyph.glyphname == ["uni277E"]:  ep = False  #   ❾  10110   277E
+        if glyph.glyphname == ["uni277F"]:  ep = False  #   ❿  10111   277F
+        if glyph.glyphname == ["uni24EB"]:  ep = False  #   ⓫  9451    24EB
+        if glyph.glyphname == ["uni24EC"]:  ep = False  #   ⓬  9452    24EC
+        if glyph.glyphname == ["uni24ED"]:  ep = False  #   ⓭  9453    24ED
+        if glyph.glyphname == ["uni24EE"]:  ep = False  #   ⓮  9454    24EE
+        if glyph.glyphname == ["uni24EF"]:  ep = False  #   ⓯  9455    24EF
+        if glyph.glyphname == ["uni24F0"]:  ep = False  #   ⓰  9456    24F0
+        if glyph.glyphname == ["uni24F1"]:  ep = False  #   ⓱  9457    24F1
+        if glyph.glyphname == ["uni24F2"]:  ep = False  #   ⓲  9458    24F2
+        if glyph.glyphname == ["uni24F3"]:  ep = False  #   ⓳  9459    24F3
+        if glyph.glyphname == ["uni24F4"]:  ep = False  #   ⓴  9460    24F4
+        
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Start processing          ", end=" ", flush=True)
         # glyph.background = glyph.foreground  # バックグラウンドにグリフをコピー
         proc_cnt += 1  # 処理中グリフのカウントアップ
@@ -289,14 +312,16 @@ def main():
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Point Count {point_count:<6}        ", end=" ", flush=True)
         upscale(glyph)  # 縦に拡大する
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Wider stroke              \r", end=" ", flush=True)
-        ys_widestroke(glyph, stroke_width, STOROKE_HEIGHT)  # 拡幅処理
+        if ep:
+            ys_widestroke(glyph, stroke_width, STOROKE_HEIGHT)  # 拡幅処理
         downscale(glyph)  # 幅を縮小＆最初に縦に伸ばした奴を元に戻す
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Anomality Repair          \r", end=" ", flush=True)
         anomality_repair(glyph)
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Anomality Repair Plus     \r", end=" ", flush=True)
         if glyph.validate(1) & 0x22: ys_rescale_chain(glyph) # 変形、精度劣化を伴う修復試行を行う。
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Overflow treatment        \r", end=" ", flush=True)
-        shapeup_outline(glyph, em_size, stroke_width)  # アウトラインの引き締め
+        if ep:
+            shapeup_outline(glyph, em_size, stroke_width)  # アウトラインの引き締め
         vshrink(glyph)  # 指定の縮小率に従って縦横比変更
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Half-width processing     ", end=" ", flush=True)
         monospacewidth(glyph, style_is_prop, halfwidth_glyph_flag, em_size)
