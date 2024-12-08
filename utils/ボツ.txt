@@ -1,0 +1,52 @@
+# 各スタイルを表すブール値を受け取り、fsSelectionの値を計算する関数。
+# この関数では引数の順序がビットの並びと異なるので注意すること。
+# (利用する気の無いパラメーターが多くてね……)
+def build_fsSelection(
+    wws=True,           # WWSファミリー（Weight-Width-Slope）
+    regular=False,      # レギュラースタイル
+    bold=False,         # ボールドスタイル
+    italic=False,       # イタリックスタイル
+    underscore=False,   # 下線入りスタイル
+    negative=False,     # 地黒白抜きのスタイル
+    outlined=False,     # ワイヤーフレーム的なスタイル
+    strikeout=False,    # 打消し線スタイル
+    use_metrics=False,  # OS/2テーブルのTypo Metricsを使用する
+    oblique=False       # 疑似イタリック体スタイル
+):
+
+    # 各ビットの定義
+    ITALIC =      0b0000000000000001
+    UNDERSCORE =  0b0000000000000010
+    NEGATIVE =    0b0000000000000100
+    OUTLINED =    0b0000000000001000
+    STRIKEOUT =   0b0000000000010000
+    BOLD =        0b0000000000100000
+    REGULAR =     0b0000000001000000
+    USE_METRICS = 0b0000000010000000
+    WWS =         0b0000000100000000
+    OBLIQUE =     0b0000001000000000
+
+    # 各ビットを組み立てる。
+    fs_selection = 0b0000000000000000
+    if italic:
+        fs_selection |= ITALIC
+    if underscore:
+        fs_selection |= UNDERSCORE
+    if negative:
+        fs_selection |= NEGATIVE
+    if outlined:
+        fs_selection |= OUTLINED
+    if strikeout:
+        fs_selection |= STRIKEOUT
+    if bold:
+        fs_selection |= BOLD
+    if regular:
+        fs_selection |= REGULAR
+    if use_typo_metrics:
+        fs_selection |= USE_TYPO_METRICS
+    if wws:
+        fs_selection |= WWS
+    if oblique:
+        fs_selection |= OBLIQUE
+
+    return fs_selection

@@ -48,4 +48,8 @@ from .ys_fontforge_widestroke import ys_widestroke
 
 
 
-
+# 白抜き文字に拡幅処理をかけると文字が崩れるので、
+# 問題となる処理から除外するためのリストとフラグ処理のために。
+# 外部データ化した方がいいのかもしれんけど。
+# ys_list_invglyph(input_str, flag)
+from .ys_invglyph_list import ys_list_invglyph

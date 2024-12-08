@@ -11,7 +11,7 @@ import math
 
 from utils import ys_repair_Self_Insec, ys_rm_little_line, ys_rm_small_poly
 from utils import ys_closepath, ys_repair_si_chain, ys_rescale_chain, ys_simplify
-from utils import ys_widestroke
+from utils import ys_widestroke, ys_list_invglyph
 from bz_narow_set import shorten_style_rd, write_property
 
 # コマンドライン引数の処理
@@ -63,13 +63,14 @@ PROPOTIONAL_SIDEBEARING_DIVISOR  = float(settings.get("DEFAULT", "propotional_si
 # main関数内でlocal_setup_logger(OUTPUT_NAME) 使って設定。
 logger = logging.getLogger()
 
-class StreamToLogger:  # 書き込みをロガーに転送するクラス。
+# 書き込みをロガーに転送するクラス。
+class StreamToLogger:  
     def __init__(self, logger, log_level=logging.WARNING):
         self.logger = logger
         self.log_level = log_level
         self.buffer = ''
+    # メッセージを行ごとに分割してロガーに送信
     def write(self, message):
-        # メッセージを行ごとに分割してロガーに送信
         for line in message.rstrip().splitlines():
             self.logger.log(self.log_level, line.rstrip())
     def flush(self):
@@ -103,7 +104,7 @@ def setup():
     os.makedirs(BUILD_FONTS_DIR, exist_ok=True)  # 作業用のディレクトリを作成
     logger = local_setup_logger(OUTPUT_NAME)  # ログ出力の設定
     # 読み込むフォントのディレクトリまで確定させる
-    input_fontname = shorten_style_rd(INPUT_FONTSTYLES)[0]
+    input_fontname = shorten_style_rd(INPUT_FONTSTYLES, VSHRINK_RATIO)[0]
     input_fontfile = os.path.join(SOURCE_FONTS_DIR, input_fontname)
     print (f"\r input_fontfile \r", end=" ", flush=True)
     font = fontforge.open(input_fontfile)  # フォントを開く
@@ -124,8 +125,8 @@ def save_and_open(font, filepath):
     sys.stdout = sys.__stdout__  # 標準出力が狂うかもなので一応初期化。
     return font
 
+# ASCII範囲に基づいてフォントがプロポーショナルかを判定
 def isprop(font):
-    # ASCII範囲に基づいてフォントがプロポーショナルかを判定
     widths = set()  # 空のセットを初期化
     for i in range(32, 127):  # ASCII範囲をループ
         char = chr(i)
@@ -140,9 +141,19 @@ def isprop(font):
         style_is_prop = False
     return style_is_prop
 
+# ASCII範囲にコンポジットグリフが居たら解除
+def decomposit_asc(font):
+    for codepoint in range(0x20, 0x7F):
+        if codepoint in font:
+            glyph = font[codepoint]
+            if not glyph.isWorthOutputting():
+                continue  # 出力しないグリフはスキップ
+            if len(glyph.references) > 0:
+                glyph.unlinkRef() #コンポジットグリフの参照を解除
+
+# savefreq個処理してたら一旦保存。
 def Local_snapshot_sfd (font, glyph, proc_cnt, del_file):
     try:
-    # savefreq個処理してたら一旦保存
         if proc_cnt % PRESAVE_INTERVAL == 1:
             print(f"\r 作業前保存中のグリフ： {glyph.glyphname} \r", end=" ", flush=True)
             temp_file = f"{OUTPUT_NAME}_temp_{proc_cnt}.sfd"
@@ -163,16 +174,23 @@ def Local_snapshot_sfd (font, glyph, proc_cnt, del_file):
         print(f"保存か削除に失敗したかも？　多分削除に……： {del_file} \r", flush=True)
     return del_file
 
-def is_halfwidth(glyph, em_size):
-    # グリフ幅がジャスト半分ならそのことを覚えておく
-    if glyph.width ==  em_size / 2:
-        halfwidth_glyph_flag = True
-    else :
-        halfwidth_glyph_flag = False
-    return halfwidth_glyph_flag
+# 強制的に全グリフの幅を揃えるパターン専用の処理
+def force_width_normalize_setting(glyph, em_size, posiflag):
+    # 幅が極端に狭いグリフにはなにもしない
+    if glyph.width < em_size / 3:
+         posiflag = False
+         wratio = 1
+    # 最初から縮小目標とほぼ近い幅のグリフはストロークの対象外にする。
+    elif (glyph.width / em_size) < VSHRINK_RATIO * 1.05:
+        posiflag = False
+        wratio = em_size / glyph.width
+    # その他は幅をみんな同じに揃える
+    else:
+        wratio = em_size / glyph.width
+    return wratio, posiflag
 
+# フォントウエイトと確認中グリフのポイント数を勘案してストロークの幅を変える
 def custom_stroke_width(glyph, font_weight, base_stroke_width):
-    # フォントウエイトと確認中グリフのポイント数を勘案してストロークの幅を変える
     point_count = sum(len(contour) for contour in glyph.layers["Fore"])
     if point_count > STRWR_POINTS_HI or font_weight > STRWR_WEIGHT_HI:
         stroke_width = round(base_stroke_width * REDUCE_RATIO_HI)
@@ -182,16 +200,16 @@ def custom_stroke_width(glyph, font_weight, base_stroke_width):
         stroke_width = base_stroke_width
     return point_count, stroke_width
 
-def upscale(glyph):
-    glyph.transform((1, 0, 0, 8, 0, 0))
-    glyph.addExtrema("all") # 極点を追加
+def upscale(glyph, wratio):
+    glyph.transform((wratio, 0, 0, 8, 0, 0))
+    glyph.addExtrema("all")
 
 def downscale(glyph):
     glyph.transform((1, 0, 0, 0.125, 0, 0))
     glyph.addExtrema("all")
 
+# 加工後は何かしらの異常が発生するので修復を試みる
 def anomality_repair(glyph):
-    # 加工後は何かしらの異常が発生するので修復を試みる
     glyph.round()  # 整数化
     glyph.removeOverlap()
     if glyph.validate(1) & 0x01:  # 開いたパスがある場合
@@ -200,12 +218,16 @@ def anomality_repair(glyph):
     ys_repair_Self_Insec(glyph, 2)  # 自己交差の修復試行&ツノ折り
     glyph.round()
     glyph.removeOverlap()
+    if glyph.validate(1) & 0x20:
+        ys_rescale_chain(glyph)  # 一度で取り切れなかった時対策
+        glyph.round()
+        glyph.removeOverlap()
     glyph.addExtrema("all")
 
+# 幅のストロークで太ったアウトラインを引き締める。
+# サイドベアリングを弄りたくないので拡大縮小の原点はグリフの中心にする。
+# グリフの幅まで変わると困るのでレイヤー単位で操作
 def shapeup_outline(glyph, em_size, stroke_width):
-    # 幅のストロークで太ったアウトラインを引き締める。
-    # サイドベアリングを弄りたくないので拡大縮小の原点はグリフの中心にする。
-    # グリフの幅まで変わると困るのでレイヤー単位で操作
     bbox = glyph.boundingBox()
     xmin, ymin, xmax, ymax = bbox  # グリフの大きさを取得
     xcenter = xmin + (xmax - xmin) / 2
@@ -215,23 +237,16 @@ def shapeup_outline(glyph, em_size, stroke_width):
     glyph.foreground.transform((1, 0, 0, 1, xcenter, 0))
     glyph.addExtrema("all")
 
+# 指定の縮小率に従って縦横比変更
 def vshrink(glyph):
-    # 指定の縮小率に従って縦横比変更
     glyph.transform((VSHRINK_RATIO, 0, 0, 1, 0, 0))
     glyph.addExtrema("all")
 
-def monospacewidth(glyph, style_is_prop, halfwidth_glyph_flag, em_size):
-    # 半角フォントのグリフ幅を設定する(念の為って性格が強い)
-    if not style_is_prop:
-        if halfwidth_glyph_flag:
-            glyph.width = round(em_size / 2 * VSHRINK_RATIO)
-        else:
-            glyph.width = round(em_size * VSHRINK_RATIO)
-
+# 最後にTTFの仕様に合わせた最適化を実施
 def finish_optimise(glyph):
-    # 最後にTTFの仕様に合わせた最適化を実施
     if glyph.validate(1) & 0x01:  # 開いたパスがある場合
-        ys_repair_si_chain(glyph, proc_cnt)  # 自己交差の修復試行&ツノ折り(パスも閉じてくれるし)
+        # 自己交差の修復試行&ツノ折り(パスも閉じてくれるし)
+        ys_repair_si_chain(glyph, proc_cnt)
     glyph.round()
     glyph.simplify()
     ys_repair_Self_Insec(glyph, 1)
@@ -265,13 +280,18 @@ def Local_validate_notice(glyph, note, loglevel):
 def main():
     font, del_file, temp_file, temp_file_path = setup()  # セットアップ
     font = save_and_open(font, temp_file_path)  # SFDに変えて開き直し
-    style_is_prop = isprop(font)  # プロポーショナルか判定
+    style_is_prop = isprop(font)  # 元のフォントがプロポーショナルか判定
     font_weight = font.os2_weight  # フォントの元情報を把握
-    em_size = font.em  # ↓矢印ストローク幅のセッティング
+    em_size = font.em  # ↓基本ストローク幅のセッティング
     base_stroke_width = STROKE_WIDTH_MIN + STROKE_WIDTH_SF * (1 - VSHRINK_RATIO)
     proc_cnt: int = 0  # カウンタをセット
     # フォントのプロパティを書き換える
     write_property(ini_name, INPUT_FONTSTYLES, VSHRINK_RATIO, font)
+    if INPUT_FONTSTYLES.startswith("M"):
+        mono_all = True
+        decomposit_asc(font)
+    else:
+        mono_all = False
 
     for glyph in font.glyphs():  # 全グリフをループ処理
         if not glyph.isWorthOutputting():
@@ -280,51 +300,35 @@ def main():
         if len(glyph.references) > 0:
             print(f"\r 合成グリフをスキップ： {glyph.glyphname}", end=" ", flush=True)
             continue
-        ep = True
-        if glyph.glyphname == ["uni2756"]:  ep = False  #   ❖  10070   2756
-        if glyph.glyphname == ["uni2776"]:  ep = False  #   ❶  10102   2776
-        if glyph.glyphname == ["uni2777"]:  ep = False  #   ❷  10103   2777
-        if glyph.glyphname == ["uni2778"]:  ep = False  #   ❸  10104   2778
-        if glyph.glyphname == ["uni2779"]:  ep = False  #   ❹  10105   2779
-        if glyph.glyphname == ["uni277A"]:  ep = False  #   ❺  10106   277A
-        if glyph.glyphname == ["uni277B"]:  ep = False  #   ❻  10107   277B
-        if glyph.glyphname == ["uni277C"]:  ep = False  #   ❼  10108   277C
-        if glyph.glyphname == ["uni277D"]:  ep = False  #   ❽  10109   277D
-        if glyph.glyphname == ["uni277E"]:  ep = False  #   ❾  10110   277E
-        if glyph.glyphname == ["uni277F"]:  ep = False  #   ❿  10111   277F
-        if glyph.glyphname == ["uni24EB"]:  ep = False  #   ⓫  9451    24EB
-        if glyph.glyphname == ["uni24EC"]:  ep = False  #   ⓬  9452    24EC
-        if glyph.glyphname == ["uni24ED"]:  ep = False  #   ⓭  9453    24ED
-        if glyph.glyphname == ["uni24EE"]:  ep = False  #   ⓮  9454    24EE
-        if glyph.glyphname == ["uni24EF"]:  ep = False  #   ⓯  9455    24EF
-        if glyph.glyphname == ["uni24F0"]:  ep = False  #   ⓰  9456    24F0
-        if glyph.glyphname == ["uni24F1"]:  ep = False  #   ⓱  9457    24F1
-        if glyph.glyphname == ["uni24F2"]:  ep = False  #   ⓲  9458    24F2
-        if glyph.glyphname == ["uni24F3"]:  ep = False  #   ⓳  9459    24F3
-        if glyph.glyphname == ["uni24F4"]:  ep = False  #   ⓴  9460    24F4
-        
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Start processing          ", end=" ", flush=True)
-        # glyph.background = glyph.foreground  # バックグラウンドにグリフをコピー
-        proc_cnt += 1  # 処理中グリフのカウントアップ
+        proc_cnt += 1  # 処理中グリフカウントのインクリメント
         del_file = Local_snapshot_sfd(font, glyph, proc_cnt, del_file)  # 中途保存
-        halfwidth_glyph_flag = is_halfwidth(glyph, em_size)  # グリフ幅のチェック
+        # 白抜き文字系のグリフで除外したい処理のためのフラグを建てて判定
+        posiflag = ys_list_invglyph(glyph.glyphname)
+        # glyph.background = glyph.foreground  # バックグラウンドにグリフをコピー
+        # 強制的に全ての文字の幅を揃える設定を作る。
+        if mono_all:
+            wratio, posiflag = force_width_normalize_setting(glyph, em_size, posiflag)
+        else:
+            wratio = 1
+        # グリフのウェイトや複雑さを勘案してストロークの幅を弱める
         point_count, stroke_width = custom_stroke_width(glyph, font_weight, base_stroke_width)
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Point Count {point_count:<6}        ", end=" ", flush=True)
-        upscale(glyph)  # 縦に拡大する
+        upscale(glyph, wratio)  # 縦に拡大する(強制モノスペース版はこの際に幅も広げる)
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Wider stroke              \r", end=" ", flush=True)
-        if ep:
-            ys_widestroke(glyph, stroke_width, STOROKE_HEIGHT)  # 拡幅処理
-        downscale(glyph)  # 幅を縮小＆最初に縦に伸ばした奴を元に戻す
+        # ストロークによる拡幅処理を実行する。
+        if posiflag: ys_widestroke(glyph, stroke_width, STOROKE_HEIGHT)
+        # 幅を縮小＆最初に縦に伸ばした奴を元に戻す
+        downscale(glyph)
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Anomality Repair          \r", end=" ", flush=True)
         anomality_repair(glyph)
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Anomality Repair Plus     \r", end=" ", flush=True)
-        if glyph.validate(1) & 0x22: ys_rescale_chain(glyph) # 変形、精度劣化を伴う修復試行を行う。
+        # 変形、精度劣化を伴う修復試行を行う。
+        if glyph.validate(1) & 0x20: ys_rescale_chain(glyph)
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Overflow treatment        \r", end=" ", flush=True)
-        if ep:
-            shapeup_outline(glyph, em_size, stroke_width)  # アウトラインの引き締め
+        # ストロークで太ったアウトラインのを引き締めてオリジナルの幅に近付ける
+        if posiflag: shapeup_outline(glyph, em_size, stroke_width)
         vshrink(glyph)  # 指定の縮小率に従って縦横比変更
-        print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Half-width processing     ", end=" ", flush=True)
-        monospacewidth(glyph, style_is_prop, halfwidth_glyph_flag, em_size)
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Finish optimization       \r", end=" ", flush=True)
         finish_optimise(glyph)
         # Local_validate_notice(glyph, "仕上げ処理後", "warning")  # 仕上げ後の検査(デバッグ用)
