@@ -250,9 +250,14 @@ def finish_optimise(glyph):
     glyph.round()
     glyph.simplify()
     ys_repair_Self_Insec(glyph, 1)
-    glyph.round()
     glyph.removeOverlap()
     glyph.round()
+    glyph.removeOverlap()
+    if glyph.validate(1) & 0x20:  # さらに自己交差がある場合
+        ys_repair_Self_Insec(glyph, 2)
+        glyph.round()
+        glyph.removeOverlap()
+        glyph.round()
     glyph.addExtrema("all")
 
 def Local_validate_notice(glyph, note, loglevel):
@@ -261,8 +266,9 @@ def Local_validate_notice(glyph, note, loglevel):
         log_func(f"{note}のグリフ '{glyph.glyphname}' に開いたパス")
     if glyph.validate(1) & 0x02:  # 外側に時計回のパスがある
         logger.info(f"{note}のグリフ '{glyph.glyphname}' の外側に時計回りのパス")
-    if glyph.validate(1) & 0x04:  # 交差がある
-        logger.info(f"{note}のグリフ '{glyph.glyphname}' に交差がある")
+    # if glyph.validate(1) & 0x04:  # 交差がある
+    # logger.info(f"{note}のグリフ '{glyph.glyphname}' に交差がある")
+    # 交差は見つけてもどーにもできないので記録から外す……
     if glyph.validate(1) & 0x08:  # 参照が不正
         logger.info(f"{note}のグリフ '{glyph.glyphname}' の参照が不正")
     if glyph.validate(1) & 0x10:  # ヒントが不正
@@ -287,11 +293,8 @@ def main():
     proc_cnt: int = 0  # カウンタをセット
     # フォントのプロパティを書き換える
     write_property(ini_name, INPUT_FONTSTYLES, VSHRINK_RATIO, font)
-    if INPUT_FONTSTYLES.startswith("M"):
-        mono_all = True
-        decomposit_asc(font)
-    else:
-        mono_all = False
+    # 全部モノスペースのフラグを管理。
+    mono_all = INPUT_FONTSTYLES.startswith("M")
 
     for glyph in font.glyphs():  # 全グリフをループ処理
         if not glyph.isWorthOutputting():

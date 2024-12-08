@@ -31,10 +31,7 @@ def shorten_style_rd(input_fontstyles, ratio):
         p_type = "P"
     elif spacing_type == "AllMonospace":
         MPtype = "M"
-        if ratio > 0.5:
-            p_type = "P"
-        else: 
-            p_type = ""
+        p_type = ""
     else:
         MPtype = ""
         p_type = ""
@@ -170,43 +167,52 @@ at: http://scripts.sil.org/OFL""",
     # 通常使わない属性をここではセット……
     if MPtype == "M":
         panose_propotion = 9  # 等幅
-        if vshrink_ratio <= 0.5:
+        if vshrink_ratio <= 0.3:
             font.os2_width = 1    # Ultra-Condensed
-        elif vshrink_ratio <= 0.625:
+        elif vshrink_ratio <= 0.4:
             font.os2_width = 2    # Extra-Condensed
-        elif vshrink_ratio <= 0.75:
+        elif vshrink_ratio <= 0.5:
             font.os2_width = 3    # Condensed
-        elif vshrink_ratio <= 0.875:
+        elif vshrink_ratio <= 0.6:
             font.os2_width = 4    # Semi-Condensed
+        elif vshrink_ratio <= 0.7:
+            font.os2_width = 5    # Medium
+        elif vshrink_ratio <= 0.8:
+            font.os2_width = 6    # Semi-Expanded
+        elif vshrink_ratio <= 0.9:
+            font.os2_width = 7    # Expanded
+        elif vshrink_ratio <= 1:
+            font.os2_width = 8    # Extra-Expanded
+        else:
+            font.os2_width = 9    # Ultra-Expanded
 
-    elif vshrink_ratio <= 0.5:
+    elif vshrink_ratio <= 0.3:
         panose_propotion = 8  # Very Condensed
         font.os2_width = 1    # Ultra-Condensed
-    elif vshrink_ratio <= 0.625:
+    elif vshrink_ratio <= 0.4:
         panose_propotion = 8  # Very Condensed
         font.os2_width = 2    # Extra-Condensed
-    elif vshrink_ratio <= 0.75:
+    elif vshrink_ratio <= 0.5:
         panose_propotion = 6  # Condensed
         font.os2_width = 3    # Condensed
-    elif vshrink_ratio <= 0.875:
+    elif vshrink_ratio <= 0.6:
         panose_propotion = 6  # Condensed
         font.os2_width = 4    # Semi-Condensed
-
-    elif vshrink_ratio >= 2:
-        panose_propotion = 7  # Very Extended
-        font.os2_width = 9    # Ultra-Expanded
-    elif vshrink_ratio >= 1.5:
-        panose_propotion = 7  # Very Extended
-        font.os2_width = 8    # Extra-Expanded
-    elif vshrink_ratio >= 1.25:
+    elif vshrink_ratio <= 0.7:
+        panose_propotion = 0  # Any
+        font.os2_width = 5    # Medium
+    elif vshrink_ratio <= 0.8:
+        panose_propotion = 5  # Extended
+        font.os2_width = 6    # Semi-Expanded
+    elif vshrink_ratio <= 0.9:
         panose_propotion = 5  # Extended
         font.os2_width = 7    # Expanded
-    elif vshrink_ratio >= 1.125:
-        panose_propotion = 5  # Extended
-        font.os2_width = 6  # Semi-Expanded
+    elif vshrink_ratio <= 1:
+        panose_propotion = 7  # Very Extended
+        font.os2_width = 8    # Extra-Expanded
     else:
-        panose_propotion = 0  # 任意
-        font.os2_width = 5  # Medium
+        panose_propotion = 7  # Very Extended
+        font.os2_width = 9    # Ultra-Expanded
 
     # Panoseの書き込み
     font.os2_panose = (panose_family, panose_serif, panose_weight, panose_propotion, 0, 0, 0, 0, 0, 0)
