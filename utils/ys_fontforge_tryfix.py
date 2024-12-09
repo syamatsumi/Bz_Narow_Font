@@ -2,33 +2,8 @@
 
 import fontforge
 
-from .ys_fontforge_Remove_artifacts import ys_rm_little_line, ys_rm_small_poly
+from .ys_fontforge_Remove_artifacts import ys_closepath, ys_rm_spikecontours, ys_rm_little_line, ys_rm_small_poly
 from .ys_fontforge_Repair_Self_Intersections import ys_repair_Self_Insec
-
-# 開いたパスを閉じて、閉じられないパスを捨てる関数
-def ys_closepath(glyph):
-    # パスが閉じられたコンターをOKパス変数にブチ込む、
-    ok_paths = [contour.dup() for contour in glyph.foreground if contour.closed]
-    # パスが開いたコンター(さっき保存できてないコンター)をNG変数にブチ込む
-    ng_paths = [contour.dup() for contour in glyph.foreground if contour not in ok_paths]
-    # フォアグラウンドをクリアして、NGパス変数に入れてたコンターを書き戻す
-    glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
-    for contour in ng_paths:  # NGパスの書き戻し
-        glyph.foreground += contour
-    # 開いたパスを閉じる操作
-    for contour in glyph.foreground:
-        contour.addExtrema("all")
-        contour.closed = True  # 強制的に閉じる
-
-    # 強制的に閉じることができたパスをOKパス変数にブチ込む、
-    ok_paths += [contour.dup() for contour in glyph.foreground if contour.closed]
-    glyph.foreground = fontforge.layer()  # まだ残ってるゴミは諦めてポイ。
-    for contour in ok_paths:  # OKパスを書き戻す
-        glyph.foreground += contour
-    
-    glyph.addExtrema("all")
-
-
 
 def ys_repair_si_chain(glyph, proc_cnt):
     if glyph.validate(1) & 0x01:  # 開いたパスを検出
@@ -42,58 +17,72 @@ def ys_repair_si_chain(glyph, proc_cnt):
 
     if glyph.validate(1) & 0x20:  # 自己交差がある
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Anomality Repair 1        \r", end=" ", flush=True)
+        ys_rm_spikecontours(glyph, 0.01, 10)
         ys_repair_Self_Insec(glyph, 1)
         glyph.round()
         glyph.removeOverlap()
+        ys_rm_spikecontours(glyph, 0.01, 10)
 
         if glyph.validate(1) & 0x20:
             print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Anomality Repair 2        \r", end=" ", flush=True)
             glyph.foreground = fontforge.layer()
             for contour in stroke_backup:
                 glyph.foreground += contour
+            ys_rm_spikecontours(glyph, 0.01, 10)
             ys_repair_Self_Insec(glyph, 3)
             glyph.round()
             glyph.removeOverlap()
+            ys_rm_spikecontours(glyph, 0.01, 10)
 
             if glyph.validate(1) & 0x20:
                 print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Anomality Repair 3        \r", end=" ", flush=True)
                 glyph.foreground = fontforge.layer()
                 for contour in stroke_backup:
                     glyph.foreground += contour
+                ys_rm_spikecontours(glyph, 0.01, 10)
                 ys_repair_Self_Insec(glyph, 4)
                 glyph.round()
                 glyph.removeOverlap()
+                ys_rm_spikecontours(glyph, 0.01, 10)
 
                 if glyph.validate(1) & 0x20:
                     print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Anomality Repair 4        \r", end=" ", flush=True)
                     glyph.foreground = fontforge.layer()
                     for contour in stroke_backup:
                         glyph.foreground += contour
+                    ys_rm_spikecontours(glyph, 0.01, 10)
                     ys_repair_Self_Insec(glyph, 5)
                     glyph.round()
                     glyph.removeOverlap()
+                    ys_rm_spikecontours(glyph, 0.01, 10)
 
                     if glyph.validate(1) & 0x20:
                         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Anomality Repair 5        \r", end=" ", flush=True)
                         glyph.foreground = fontforge.layer()
                         for contour in stroke_backup:
                             glyph.foreground += contour
+                        ys_rm_spikecontours(glyph, 0.01, 10)
                         ys_repair_Self_Insec(glyph, 6)
                         glyph.round()
                         glyph.removeOverlap()
+                        ys_rm_spikecontours(glyph, 0.01, 10)
 
                         if glyph.validate(1) & 0x20:
                             print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Repair failure, rollback. \r", end=" ", flush=True)
                             glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
                             for contour in stroke_backup:  # 保存していたパスの書き戻し
                                 glyph.foreground += contour  # 修復試行前に戻す
+                            ys_rm_spikecontours(glyph, 0.01, 10)
                             ys_repair_Self_Insec(glyph, 2)
                             glyph.round()
                             glyph.removeOverlap()
+                            ys_rm_spikecontours(glyph, 0.01, 10)
     else:
+        ys_rm_spikecontours(glyph, 0.01, 10)
         ys_repair_Self_Insec(glyph, 2)
         glyph.round()
         glyph.removeOverlap()
+        ys_rm_spikecontours(glyph, 0.01, 10)
 
 
 # 拡大縮小に伴う誤差でなおせないか試行錯誤してた頃のやつ

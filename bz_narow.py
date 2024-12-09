@@ -9,10 +9,14 @@ import fontforge
 import psMat
 import math
 
-from utils import ys_repair_Self_Insec, ys_rm_little_line, ys_rm_small_poly
-from utils import ys_closepath, ys_repair_si_chain, ys_rescale_chain, ys_simplify
+from utils import ys_closepath, ys_repair_Self_Insec, ys_rm_spikecontours
+from utils import ys_rm_little_line, ys_rm_small_poly
+from utils import ys_repair_si_chain, ys_rescale_chain, ys_simplify
 from utils import ys_widestroke, ys_list_invglyph
 from bz_narow_set import shorten_style_rd, write_property
+
+
+
 
 # コマンドライン引数の処理
 if len(sys.argv) < 4:
@@ -215,9 +219,11 @@ def anomality_repair(glyph):
     if glyph.validate(1) & 0x01:  # 開いたパスがある場合
         ys_closepath(glyph)
     glyph.simplify(0.1) # 単純化
+    ys_rm_spikecontours(glyph, 0.01, 10)
     ys_repair_Self_Insec(glyph, 2)  # 自己交差の修復試行&ツノ折り
     glyph.round()
     glyph.removeOverlap()
+    ys_rm_spikecontours(glyph, 0.01, 10)
     if glyph.validate(1) & 0x20:
         ys_rescale_chain(glyph)  # 一度で取り切れなかった時対策
         glyph.round()
@@ -251,12 +257,16 @@ def finish_optimise(glyph):
     glyph.simplify()
     ys_repair_Self_Insec(glyph, 1)
     glyph.removeOverlap()
+    ys_rm_spikecontours(glyph, 0.01, 10)
     glyph.round()
     glyph.removeOverlap()
+    ys_rm_spikecontours(glyph, 0.01, 10)
     if glyph.validate(1) & 0x20:  # さらに自己交差がある場合
+        ys_rm_spikecontours(glyph, 0.01, 10)
         ys_repair_Self_Insec(glyph, 2)
         glyph.round()
         glyph.removeOverlap()
+        ys_rm_spikecontours(glyph, 0.01, 10)
         glyph.round()
     glyph.addExtrema("all")
 
@@ -320,7 +330,7 @@ def main():
         upscale(glyph, wratio)  # 縦に拡大する(強制モノスペース版はこの際に幅も広げる)
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Wider stroke              \r", end=" ", flush=True)
         # ストロークによる拡幅処理を実行する。
-        if posiflag: ys_widestroke(glyph, stroke_width, STOROKE_HEIGHT)
+        if posiflag: ys_widestroke(glyph, stroke_width, STOROKE_HEIGHT, proc_cnt)
         # 幅を縮小＆最初に縦に伸ばした奴を元に戻す
         downscale(glyph)
         print(f"\r now:{proc_cnt:<5}:{glyph.glyphname:<15} Anomality Repair          \r", end=" ", flush=True)

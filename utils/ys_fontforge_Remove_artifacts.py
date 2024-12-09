@@ -3,10 +3,125 @@
 import fontforge
 import math
 
+# 開いたパスを閉じて、閉じられないパスを捨てる関数
+def ys_closepath(glyph):
+    # パスが閉じられたコンターをOKパス変数にブチ込む、
+    ok_paths = [contour.dup() for contour in glyph.foreground if contour.closed]
+    # パスが開いたコンター(さっき保存できてないコンター)をNG変数にブチ込む
+    ng_paths = [contour.dup() for contour in glyph.foreground if contour not in ok_paths]
+    # フォアグラウンドをクリアして、NGパス変数に入れてたコンターを書き戻す
+    glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
+    for contour in ng_paths:  # NGパスの書き戻し
+        glyph.foreground += contour
+    # 開いたパスを閉じる操作
+    for contour in glyph.foreground:
+        contour.addExtrema("all")
+        contour.closed = True  # 強制的に閉じる
+
+    # 強制的に閉じることができたパスをOKパス変数にブチ込む、
+    ok_paths += [contour.dup() for contour in glyph.foreground if contour.closed]
+    glyph.foreground = fontforge.layer()  # まだ残ってるゴミは諦めてポイ。
+    for contour in ok_paths:  # OKパスを書き戻す
+        glyph.foreground += contour
+    
+    glyph.addExtrema("all")
+    return
+
+
+
+# 面積を簡易的に計算する関数
+def contour_area_and_points(contour):
+    try:
+        on_pts = []
+        for i in range(len(contour)):
+            if contour[i].type != 'offcurve':
+                on_pts.append(contour[i])
+        if len(on_pts) < 3:
+            return 0.0, len(on_pts)
+        x = [p.x for p in on_pts]
+        y = [p.y for p in on_pts]
+        area = 0.0
+        for i in range(len(on_pts)):
+            j = (i + 1) % len(on_pts)
+            area += x[i]*y[j] - y[i]*x[j]
+    except AttributeError as e:  # 属性の問題がある場合
+        print(f"AttributeError: {e}")
+        return 0.0, 0
+    except Exception as e:  # それ以外の予期せぬエラー
+        print(f"Unexpected error: {e}")
+        return 0.0, 0
+    return abs(area)*0.5, len(on_pts)
+
+# コンターの周長を簡易的に計算する関数
+def contour_length_and_points(contour):
+    try:
+        on_pts = []
+        for i in range(len(contour)):
+            if contour[i].type != 'offcurve':
+                on_pts.append(contour[i])
+        length = 0.0
+        for i in range(len(on_pts)):
+            j = (i + 1) % len(on_pts)
+            dx = on_pts[j].x - on_pts[i].x
+            dy = on_pts[j].y - on_pts[i].y
+            length += math.sqrt(dx*dx + dy*dy)
+    except AttributeError as e:  # 属性の問題がある場合
+        print(f"AttributeError: {e}")
+        return 0.0, 0
+    except Exception as e:  # それ以外の予期せぬエラー
+        print(f"Unexpected error: {e}")
+        return 0.0, 0
+    return length, len(on_pts)
+
+# 周長に対して極端に面積の小さなコンターを削除する関数
+def ys_rm_spikecontours(glyph, a_thresh=0.01, p_thresh=10):
+    ok_paths = []  # 有効なパスを保存するリスト
+    if glyph.validate(1) & 0x01:  # 空いたパスが存在する場合
+        ys_closepath(glyph)  # 空いたパスを強制的に閉じる関数
+
+    for contour in glyph.foreground:
+        length, points = contour_length_and_points(contour)
+        # 長さがないなら面積比も0で確定。
+        if length == 0:
+            ratio = 0.0
+
+        # 入り組んだコンター（＊など）は、外周長に対する面積が
+        # 極端に低く出るため、頂点数が多く、かつコンターの外周長が
+        # BBOXの外周長を超える場合のみ、BBOXの面積と比較する。
+        else:
+            if points > p_thresh:  # 点の数が多い時
+                bbox = contour.boundingBox()
+                # [xmin, ymin, xmax, ymax] を返す想定で計算。
+                bbox_pe = 2 * ((bbox[2] - bbox[0]) + (bbox[3] - bbox[1]))
+
+                # BBOXの周長より長いときはBBOXの面積が比較対象
+                if length > bbox_pe:
+                    max_area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
+                else:
+                    max_area = (length/4)**2
+            else:  # 上記のどちらの条件にも当てはまらない場合は外周長基準。
+                max_area = (length/4)**2
+
+            # コンターの概算面積を求めてmax_areaと比較する。
+            area, _ = contour_area_and_points(contour)
+            ratio = area/max_area if max_area > 0 else 0.0
+
+        if ratio > a_thresh:  # 基準より面積比が大きければOK
+            ok_paths.append(contour.dup())  # 合格パスに追加
+
+    # フォアグラウンドをクリアして、OKパス変数に入れてたコンターを書き戻す
+    glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
+    for contour in ok_paths:  # OKパスの書き戻し
+        glyph.foreground += contour
+    return
+
+
+
 # オンカーブ点のノード数が2より多い(つまり3以上)のパスをok_pathsに保存。
 # 2点間の距離が一定数以上あるなら、カマボコ状の形を作ってる可能性がある。
 # 問答無用で削除する場合はmin_distanceをクソデカに設定すること。
-
+# 何故かメイン関数に入れるとグリフが消える問題、たぶん参照渡しが原因。
+# おそらくこれで解決したハズ……
 def ys_rm_little_line(glyph, min_distance=20):
     ok_paths = []  # 有効なパスを保存するリスト
     for contour in glyph.foreground:
@@ -20,24 +135,17 @@ def ys_rm_little_line(glyph, min_distance=20):
                 +(on_curve_points[0].y - on_curve_points[1].y)**2
                 )
             if distance > min_distance:
-                ok_paths.append(contour)  # 距離が長ければOK
+                ok_paths.append(contour.dup())  # 距離が長ければOK
         elif len(on_curve_points) > 2:
             # オンクルーブポイントが3点以上の場合は無条件でOK
             ok_paths.append(contour)
-
-    # フォアグラウンドをクリアして、OKパス変数に入れてたコンターを書き戻す
-    glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
-    for contour in ok_paths:  # OKパスの書き戻し
-        glyph.foreground += contour
+    return
 
 
 
 # バウンディングボックスで判定して、
 # しきい値以下のオブジェクトは削除する。
-
 def ys_rm_small_poly(glyph, width_threshold, height_threshold):
-# これmainで使うと幅プロパティが逝くから関数内以外で使っちゃダメ。
-# 指定された閾値より小さいものをNGパス変数に入れる
     ng_paths = []  # 空リストを初期化
     for contour in glyph.foreground:  # 各パス（輪郭）をループ
         contour.addExtrema("all")
@@ -46,7 +154,7 @@ def ys_rm_small_poly(glyph, width_threshold, height_threshold):
         width = xmax - xmin
         height = ymax - ymin
         if width <= width_threshold and height <= height_threshold:  # 条件をチェック
-            ng_paths.append(contour)  # 条件を満たすものをリストに追加
+            ng_paths.append(contour.dup())  # 条件を満たすものをリストに追加
     # 問題のないパス(さっき保存できてないコンター)をOK変数にブチ込む
     ok_paths = [contour.dup() for contour in glyph.foreground if contour not in ng_paths]
     # フォアグラウンドをクリアして、OKパス変数に入れてたコンターを書き戻す

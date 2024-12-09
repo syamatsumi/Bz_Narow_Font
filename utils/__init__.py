@@ -1,5 +1,14 @@
 # utils/__init__.py
 
+
+# パスを閉じてみて、閉じられないパスは削除する
+# ys_closepath(glyph)
+from .ys_fontforge_Remove_artifacts import ys_closepath
+
+# 周長に対して極端に面積の小さなコンターを削除する関数
+# ys_rm_spikecontours(glyph, a_thresh=0.01, p_thresh=10)
+from .ys_fontforge_Remove_artifacts import ys_rm_spikecontours
+
 # オンカーブポイント2つだけのエレメント、たぶんゴミなので削除する。
 # rm_littleline(glyph, min_distance=20)
 from .ys_fontforge_Remove_artifacts import ys_rm_little_line
@@ -17,10 +26,6 @@ from .ys_fontforge_Repair_Self_Intersections import ys_repair_Self_Insec
 
 
 
-# パスを閉じてみて、閉じられないパスは削除する
-# ys_closepath(glyph)
-from .ys_fontforge_tryfix import ys_closepath
-
 # 自己交差解消スクリプトで角度を広げつつ再試行する。
 # 1～6度までやってみて、ダメでも1度の解消は適用する。
 # ys_Repair_Self_Intersections(glyph)
@@ -35,11 +40,6 @@ from .ys_fontforge_tryfix import ys_rescale_chain
 from .ys_fontforge_tryfix import ys_simplify
 
 
-
-# 輪郭の右辺だけを引き延ばします。
-# 逆方向の輪郭は左辺が縮小します。
-# ys_expand_Xweight(glyph, offset)
-from .ys_fontforge_widestroke import ys_expand_Xweight
 
 # 幅を広げるためのストロークを追加する。
 # 超高確率で自己交差を発生させるので処置必須。
