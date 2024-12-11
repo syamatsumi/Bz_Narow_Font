@@ -5,8 +5,10 @@
 # ys_closepath(glyph)
 from .ys_fontforge_Remove_artifacts import ys_closepath
 
-# 周長に対して極端に面積の小さなコンターを削除する関数
-# ys_rm_spikecontours(glyph, a_thresh=0.01, p_thresh=10)
+# 周長に対して極端に面積の小さなコンターを削除する関数。
+# でかくて細長いコンターを巻き込むことがあるので、
+# 全体の面積比から見て充分小さいものに限定する。
+# ys_rm_spikecontours(glyph, c_thresh=0.1, g_thresh=0.001, p_thresh=10)
 from .ys_fontforge_Remove_artifacts import ys_rm_spikecontours
 
 # オンカーブポイント2つだけのエレメント、たぶんゴミなので削除する。
@@ -52,4 +54,7 @@ from .ys_fontforge_widestroke import ys_widestroke
 # 問題となる処理から除外するためのリストとフラグ処理のために。
 # 外部データ化した方がいいのかもしれんけど。
 # ys_list_invglyph(input_str, flag)
-from .ys_invglyph_list import ys_list_invglyph
+from .ys_listbk import ys_blacklist
+from .ys_listwh import ys_whitelist
+from .ys_listig import ys_ignorlist
+

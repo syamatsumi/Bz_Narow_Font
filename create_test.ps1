@@ -11,7 +11,7 @@ $ffpy = $($config['ffpy'])
 $ffscr = $($config['ffscr'])
 
 
-& $ffpy $scr MゴシB test 0.8
+& $ffpy $scr MミンR test 0.6
 #& $ffpy $scr PゴシB BzなろうPゴシック30-Bold 0.3
 #& $ffpy $scr PミンR BzなろうP明朝30-Regular 0.3
 #& $ffpy $scr PミンB BzなろうP明朝30-Bold 0.3

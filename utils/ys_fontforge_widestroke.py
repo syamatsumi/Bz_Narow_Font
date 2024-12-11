@@ -37,9 +37,10 @@ def ys_widestroke(glyph, stroke_width, storoke_height, counter=1):
     )
 
     # スパイク状の独立したコンターを削除する。
-    ys_rm_spikecontours(glyph, 0.01, 10)
+    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
     # 自己交差の修復試行。直らなくても2度のツノは折る。
-    ys_repair_si_chain(glyph, counter)
+    ys_repair_si_chain(glyph, counter, 0x20)
+    ys_repair_si_chain(glyph, counter, 0x08)
     ys_rm_little_line(glyph)  # 2点で構成されたパス(ゴミ)を削除
     ys_rm_small_poly(glyph, 20, 20)  # 小さなゴミを削除
 
@@ -55,11 +56,10 @@ def ys_widestroke(glyph, stroke_width, storoke_height, counter=1):
     ys_repair_si_chain(glyph, counter) # 結合後の修復試行
 
     # ゴミ掃除
-    print(f"\r now:{glyph.glyphname:<15} Cleaning small pieces.         ", end=" ", flush=True)
-    ys_rm_spikecontours(glyph, 0.01, 10)
-    ys_rm_little_line(glyph)  # 2点で構成されたパス(ゴミ)を削除
-    ys_rm_small_poly(glyph, 20, 20)  # 小さなゴミを削除
-    glyph.addExtrema("all") # 極点を追加
+    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+  #  ys_rm_little_line(glyph)  # 2点で構成されたパス(ゴミ)を削除
+  #  ys_rm_small_poly(glyph, 25, 25)  # 小さなゴミを削除
+  #  glyph.addExtrema("all") # 極点を追加
 
 
 
