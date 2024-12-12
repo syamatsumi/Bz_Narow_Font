@@ -1,10 +1,6 @@
-Traceback (most recent call last):
-  File "G:\FontMod\bz_Narow_Font\bz_narow.py", line 441, in <module>
-    main()
-  File "G:\FontMod\bz_Narow_Font\bz_narow.py", line 370, in main
-    if stroke_flag: ys_widestroke(glyph, stroke_width, STOROKE_HEIGHT, proc_cnt)
-  File "G:\FontMod\bz_Narow_Font\utils\ys_fontforge_widestroke.py", line 56, in ys_widestroke
-    ys_repair_si_chain(glyph, counter) # åãçáå„ÇÃèCïúééçs
-  File "G:\FontMod\bz_Narow_Font\utils\ys_fontforge_tryfix.py", line 111, in ys_repair_si_chain
-  File "G:\FontMod\bz_Narow_Font\utils\ys_fontforge_Remove_artifacts.py", line 117, in ys_rm_spikecontours
-UnboundLocalError: local variable 'c_ratio' referenced before assignment
+Internal Error: Invalid 2nd order spline in SplineRefigure2
+Internal Error: Invalid 2nd order spline in SplineRefigure2
+Warning: Mac string is a subset of the Windows string in the 'name' table
+ for the UniqueID string in the English (US) language.
+Warning: Mac string is a subset of the Windows string in the 'name' table
+ for the Fullname string in the English (US) language.

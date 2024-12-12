@@ -10,13 +10,11 @@ import psMat
 import math
 
 from utils import ys_closepath, ys_repair_Self_Insec, ys_rm_spikecontours
-from utils import ys_rm_little_line, ys_rm_small_poly
+from utils import ys_rm_isolatepath, ys_rm_small_poly
 from utils import ys_repair_si_chain, ys_rescale_chain, ys_simplify
-from utils import ys_widestroke, ys_blacklist, ys_whitelist, ys_ignorlist
+from utils import ys_widestroke
+from utils import ys_blacklist, ys_whitelist, ys_ignorlist
 from bz_narow_set import shorten_style_rd, write_property
-
-
-
 
 # コマンドライン引数の処理
 if len(sys.argv) < 4:
@@ -100,6 +98,7 @@ def local_setup_logger(OUTPUT_NAME):
     logger.addHandler(stderr_handler)
     return logger
 
+# メイン関数の冒頭
 def setup():
     os.makedirs(BUILD_FONTS_DIR, exist_ok=True)  # 作業用のディレクトリを作成
     logger = local_setup_logger(OUTPUT_NAME)  # ログ出力の設定
@@ -116,6 +115,7 @@ def setup():
     del_file = temp_file  # あとで消す時用
     return font, del_file, temp_file, temp_file_path
 
+# SFDに形式を直して開き直し
 def save_and_open(font, filepath):
     print(f"保存して開きなおす。file: {filepath}\r", end=" ", flush=True)
     font.save(filepath)
@@ -124,32 +124,6 @@ def save_and_open(font, filepath):
     print(f"開きなおした file: {filepath}\r", end=" ", flush=True)
     sys.stdout = sys.__stdout__  # 標準出力が狂うかもなので一応初期化。
     return font
-
-# ASCII範囲に基づいてフォントがプロポーショナルかを判定
-def isprop(font):
-    widths = set()  # 空のセットを初期化
-    for i in range(32, 127):  # ASCII範囲をループ
-        char = chr(i)
-        if char in font:  # グリフが存在するか確認
-            glyph = font[char]
-            if hasattr(glyph, "width"):  # 幅の属性があるか検証
-                widths.add(glyph.width)  # 幅をセットに追加
-    # 幅のバリエーション数が閾値以上ならプロポーショナル
-    if len(widths) >= IS_PROPORTIONAL_CUTOFF_VARIANCE:
-        style_is_prop = True
-    else:
-        style_is_prop = False
-    return style_is_prop
-
-# ASCII範囲にコンポジットグリフが居たら解除
-def decomposit_asc(font):
-    for codepoint in range(0x20, 0x7F):
-        if codepoint in font:
-            glyph = font[codepoint]
-            if not glyph.isWorthOutputting():
-                continue  # 出力しないグリフはスキップ
-            if len(glyph.references) > 0:
-                glyph.unlinkRef() #コンポジットグリフの参照を解除
 
 # savefreq個処理してたら一旦保存。
 def Local_snapshot_sfd (font, glyph, proc_cnt, del_file):
@@ -175,73 +149,72 @@ def Local_snapshot_sfd (font, glyph, proc_cnt, del_file):
     return del_file
 
 # 強制的に全グリフの幅を揃えるパターン専用の処理
-def force_width_normalize_setting(glyph, em_size, stroke_flag):
+def force_width_norm(glyph, em_size, stroke_flag):
     # 幅が極端に狭いグリフにはなにもしない
     if glyph.width < em_size / 3:
          stroke_flag = False
-         wratio = 1
+         allmono_ratio = 1
     # 最初から縮小目標とほぼ近い幅のグリフはストロークの対象外にする。
     elif (glyph.width / em_size) < VSHRINK_RATIO * 1.05:
         stroke_flag = False
-        wratio = em_size / glyph.width
+        allmono_ratio = em_size / glyph.width
     # その他は幅をみんな同じに揃える
     else:
-        wratio = em_size / glyph.width
-    return wratio, stroke_flag
-
-# フォントウエイトと確認中グリフのポイント数を勘案してストロークの幅を変える
-def custom_stroke_width(glyph, font_weight, base_stroke_width, stroke_flag):
-    point_count = sum(len(contour) for contour in glyph.layers["Fore"])
-    # 幅の縮小率が高いほど発動条件をシビアになる。
-    sleshpt = STRWR_POINTS * VSHRINK_RATIO
-
-    # 点の数が規定値を上回るか、ウエイトが高いとナーフ発動。
-    if point_count > sleshpt or font_weight > STRWR_WEIGHT:
-
-        # 点の数が多いほどストロークが細くなる
-        stroke_ratio = sleshpt / point_count
-
-        # 縮小率が高いほどストロークが細くなる
-        stroke_ratio = stroke_ratio * VSHRINK_RATIO
-
-        # REDUCE RATIOを反映させる
-        stroke_ratio = stroke_ratio * REDUCE_RATIO
-
-        # 偶数にするために半分に割って整数化して倍にする。
-        stroke_width = round((base_stroke_width * stroke_ratio)/2)*2
-    else:  # 条件に一致しないならなにもしない
-        stroke_width = base_stroke_width
-
-    # ストローク幅が10を切るならstroke_flagをFalseにする
-    if stroke_width < 10:
-        stroke_flag = False
-    return point_count, stroke_width, stroke_flag
-
-def upscale(glyph, wratio):
-    glyph.transform((wratio, 0, 0, 8, 0, 0))
-    glyph.addExtrema("all")
-
-def downscale(glyph):
-    glyph.transform((1, 0, 0, 0.125, 0, 0))
-    glyph.addExtrema("all")
+        allmono_ratio = em_size / glyph.width
+    return allmono_ratio, stroke_flag
 
 # 加工後は何かしらの異常が発生するので修復を試みる
-def anomality_repair(glyph):
+def anomality_repair1(glyph, counter):
     glyph.round()  # 整数化
     glyph.removeOverlap()
     if glyph.validate(1) & 0x01:  # 開いたパスがある場合
         ys_closepath(glyph)
     glyph.simplify(0.1) # 単純化
-    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
-    ys_repair_Self_Insec(glyph, 3)  # 自己交差の修復試行&ツノ折り
-    glyph.round()
-    glyph.removeOverlap()
-    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
-    if glyph.validate(1) & 0x20:
-        ys_rescale_chain(glyph)  # 一度で取り切れなかった時対策
-        glyph.round()
-        glyph.removeOverlap()
-    glyph.addExtrema("all")
+    if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
+        previous_flags = glyph.validate(1) & 0x0FF
+        ys_repair_si_chain(glyph, counter)
+        current_flags = glyph.validate(1) & 0x0FF
+        if (previous_flags & ~current_flags) != 0 and current_flags != 0:
+            # フラグが下りたけどまだなんかあるなら続行。
+            # フラグに変化が無いなら繰り返す意味無いから終了。
+            previous_flags = glyph.validate(1) & 0x0FF
+            ys_repair_si_chain(glyph, counter)
+            current_flags = glyph.validate(1) & 0x0FF
+            if (previous_flags & ~current_flags) != 0 and current_flags != 0:
+                previous_flags = glyph.validate(1) & 0x0FF
+                ys_repair_si_chain(glyph, counter)
+                current_flags = glyph.validate(1) & 0x0FF
+                if (previous_flags & ~current_flags) != 0 and current_flags != 0:
+                    previous_flags = glyph.validate(1) & 0x0FF
+                    ys_repair_si_chain(glyph, counter)
+                    current_flags = glyph.validate(1) & 0x0FF
+                    if (previous_flags & ~current_flags) != 0 and current_flags != 0:
+                        ys_repair_si_chain(glyph, counter)
+    return
+
+# 変形、精度劣化を伴う修復試行を行う。
+def anomality_repair2(glyph):
+    if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
+        previous_flags = glyph.validate(1) & 0x0FF
+        ys_rescale_chain(glyph)
+        current_flags = glyph.validate(1) & 0x0FF
+        if (previous_flags & ~current_flags) != 0 and current_flags != 0:
+            # フラグが下りたけどまだなんかあるなら続行。
+            # フラグに変化が無いなら繰り返す意味無いから終了。
+            previous_flags = glyph.validate(1) & 0x0FF
+            ys_rescale_chain(glyph)
+            current_flags = glyph.validate(1) & 0x0FF
+            if (previous_flags & ~current_flags) != 0 and current_flags != 0:
+                previous_flags = glyph.validate(1) & 0x0FF
+                ys_rescale_chain(glyph)
+                current_flags = glyph.validate(1) & 0x0FF
+                if (previous_flags & ~current_flags) != 0 and current_flags != 0:
+                    previous_flags = glyph.validate(1) & 0x0FF
+                    ys_rescale_chain(glyph)
+                    current_flags = glyph.validate(1) & 0x0FF
+                    if (previous_flags & ~current_flags) != 0 and current_flags != 0:
+                        ys_rescale_chain(glyph)
+    return
 
 # 幅のストロークで太ったアウトラインを引き締める。
 # サイドベアリングを弄りたくないので拡大縮小の原点はグリフの中心にする。
@@ -256,46 +229,13 @@ def shapeup_outline(glyph, em_size, stroke_width):
     glyph.foreground.transform((1, 0, 0, 1, xcenter, 0))
     glyph.addExtrema("all")
 
-# 指定の縮小率に従って縦横比変更
-def vshrink(glyph):
-    glyph.transform((VSHRINK_RATIO, 0, 0, 1, 0, 0))
-    glyph.addExtrema("all")
-
-# 最後にTTFの仕様に合わせた最適化を実施
-def finish_optimise(glyph, proc_cnt):
-    if glyph.validate(1) & 0x01:  # 開いたパスがある場合
-        # 自己交差の修復試行&ツノ折り(パスも閉じてくれるし)
-        ys_repair_si_chain(glyph, proc_cnt, 0x20)
-    glyph.round()
-    glyph.simplify(0.1)
-    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
-
-    ys_repair_Self_Insec(glyph, 3)
-    glyph.round()
-    glyph.removeOverlap()
-    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
-    ys_rm_small_poly(glyph, 25, 25)
-
-    ys_repair_Self_Insec(glyph, 3)
-    glyph.round()
-    glyph.removeOverlap()
-    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
-    ys_rm_small_poly(glyph, 25, 25)
-
-    if glyph.validate(1) & 0x20:  # さらに自己交差がある場合
-        ys_repair_si_chain(glyph, proc_cnt, 0x20)
-    if glyph.validate(1) & 0x08:  # 参照が不正
-        ys_repair_si_chain(glyph, proc_cnt, 0x08)
-    glyph.addExtrema("all")
-
 def Local_validate_notice(glyph, note, loglevel):
     log_func = getattr(logger, loglevel, None)  # 動的にログレベルを取得
     if glyph.validate(1) & 0x01:  # 開いたパスがある
         log_func(f"{note}のグリフ '{glyph.glyphname}' に開いたパス")
     if glyph.validate(1) & 0x02:  # 外側に時計回のパスがある
         logger.info(f"{note}のグリフ '{glyph.glyphname}' の外側に時計回りのパス")
-    #if glyph.validate(1) & 0x04:  # 交差がある
-    #    print(f"{note}のグリフ '{glyph.glyphname}' に交差がある")
+    # if glyph.validate(1) & 0x04:  # 交差がある
     # logger.info(f"{note}のグリフ '{glyph.glyphname}' に交差がある")
     # 交差は見つけてもどーにもできないので記録から外す……
     if glyph.validate(1) & 0x08:  # 参照が不正
@@ -315,10 +255,20 @@ def Local_validate_notice(glyph, note, loglevel):
 def main():
     font, del_file, temp_file, temp_file_path = setup()  # セットアップ
     font = save_and_open(font, temp_file_path)  # SFDに変えて開き直し
-    style_is_prop = isprop(font)  # 元のフォントがプロポーショナルか判定
     font_weight = font.os2_weight  # フォントの元情報を把握
     em_size = font.em  # ↓基本ストローク幅のセッティング
     base_stroke_width = STROKE_WIDTH_MIN + STROKE_WIDTH_SF * (1 - VSHRINK_RATIO)
+    if font_weight > 500:
+        if base_stroke_width > 40:
+            stroke_width = 40
+        else:
+            stroke_width = base_stroke_width
+    else:
+        if base_stroke_width > 80:
+            stroke_width = 80
+        else:
+            stroke_width = base_stroke_width
+
     proc_cnt: int = 0  # カウンタをセット
     # フォントのプロパティを書き換える
     write_property(ini_name, INPUT_FONTSTYLES, VSHRINK_RATIO, font)
@@ -326,17 +276,21 @@ def main():
     mono_all = INPUT_FONTSTYLES.startswith("M")
 
     for glyph in font.glyphs():  # 全グリフをループ処理
+        # 出力に値しない(カラのグリフ)は無視
         if not glyph.isWorthOutputting():
-            print(f"出力しないグリフをスキップ： {glyph.glyphname}\r", end=" ", flush=True)
+            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Glyphs not worthy of output...':<48}\r", end=" ", flush=True)
             continue
+        # コンポジットグリフはなにもしないでスキップ
         if len(glyph.references) > 0:
-            print(f"合成グリフをスキップ： {glyph.glyphname}\r", end=" ", flush=True)
+            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Composite glyphs are ignored...':<48}\r", end=" ", flush=True)
             continue
-        if ys_ignorlist(glyph.glyphname):
-            print(f"無視リスト対象のグリフをスキップ： {glyph.glyphname}\r", end=" ", flush=True)
+        # 無視リストにあるグリフは修正試行と仕上げだけしてスキップ
+        if ys_ignorlist(glyph):
+            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Glyphs on ignore list...':<48}\r", end=" ", flush=True)
+            anomality_repair1(glyph, proc_cnt)
             continue
 
-        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Start processing':<32}\r", end=" ", flush=True)
+        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Start processing':<48}\r", end=" ", flush=True)
         proc_cnt += 1  # 処理中グリフカウントのインクリメント
         del_file = Local_snapshot_sfd(font, glyph, proc_cnt, del_file)  # 中途保存
         
@@ -346,49 +300,53 @@ def main():
             stroke_flag = True
         elif VSHRINK_RATIO >= 0.5 and font_weight < 500:
             stroke_flag = True
-        else:  # 狭め方が5割越えてたり、そこに近い値な上でウェイトが重いグリフは基本的にストロークから除外。
+        else:   # 狭め方が5割越えてたり、そこに近い値な上で
+                # ウェイトが重いグリフは基本的にストロークから除外。
+                # 拡幅対象はホワイトリストで拾う。
             stroke_flag = False
 
-        # 強制的に全ての文字の幅を揃える設定を作る。
-        if mono_all:
-            wratio, stroke_flag = force_width_normalize_setting(glyph, em_size, stroke_flag)
-        else:
-            wratio = 1
-        # グリフのウェイトや複雑さを勘案してストロークの幅を弱める
-        point_count, stroke_width, stroke_flag = custom_stroke_width(glyph, font_weight, base_stroke_width, stroke_flag)
-        
         # ホワイトリストとブラックリスト。除外した上でまぁかけても良さそうな奴が対象。
         # 巾基準だけで判断されると太さがガタガタになるので……
         stroke_flag = ys_whitelist(glyph, stroke_flag)
         stroke_flag = ys_blacklist(glyph, stroke_flag)
-        
-        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Point Count'f'{point_count:<6}':<32}\r", end=" ", flush=True)
-        upscale(glyph, wratio)  # 縦に拡大する(強制モノスペース版はこの際に幅も広げる)
 
-        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Wider stroke':<32}\r", end=" ", flush=True)
-        # ストロークによる拡幅処理を実行する。
-        if stroke_flag: ys_widestroke(glyph, stroke_width, STOROKE_HEIGHT, proc_cnt)
+        if mono_all:  # 強制モノスペース版は先に拡幅処理
+            allmono_ratio, stroke_flag = force_width_norm(glyph, em_size, stroke_flag)
+            glyph.transform((allmono_ratio, 0, 0, 1, 0, 0))  # 幅統一用の拡幅処理
+            glyph.addExtrema("all")
 
-        # 幅を縮小＆最初に縦に伸ばした奴を元に戻す
-        downscale(glyph)
+        if stroke_flag:
+            glyph.transform((1, 0, 0, 8, 0, 0)) # 縦に拡大する
+            glyph.addExtrema("all")
 
-        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair':<32}\r", end=" ", flush=True)
-        if stroke_flag: anomality_repair(glyph)
+            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Wider stroke':<48}\r", end=" ", flush=True)
+            # ストロークによる拡幅処理を実行する。
+            ys_widestroke(glyph, stroke_width, STOROKE_HEIGHT, VSHRINK_RATIO, proc_cnt)
 
-        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair Plus':<32}\r", end=" ", flush=True)
-        # 変形、精度劣化を伴う修復試行を行う。
-        if glyph.validate(1) & 0x20: ys_rescale_chain(glyph)
+            # 幅を縮小＆最初に縦に伸ばした奴を元に戻す
+            glyph.transform((1, 0, 0, 0.125, 0, 0))
+            glyph.addExtrema("all")
 
-        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Overflow treatment':<32}\r", end=" ", flush=True)
-        # ストロークで太ったアウトラインのを引き締めてオリジナルの幅に近付ける
-        if stroke_flag: shapeup_outline(glyph, em_size, stroke_width)
+            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair':<48}\r", end=" ", flush=True)
+            anomality_repair1(glyph, proc_cnt)
 
-        vshrink(glyph)  # 指定の縮小率に従って縦横比変更
-        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Finish optimization':<32}\r", end=" ", flush=True)
+            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair Plus':<48}\r", end=" ", flush=True)
+            anomality_repair2(glyph)
 
-        finish_optimise(glyph, proc_cnt)
+            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Overflow treatment':<48}\r", end=" ", flush=True)
+            # ストロークで太ったアウトラインのを引き締めてオリジナルの幅に近付ける
+            shapeup_outline(glyph, em_size, stroke_width)
+
+        # 指定の縮小率に従って縦横比変更
+        glyph.transform((VSHRINK_RATIO, 0, 0, 1, 0, 0))
+        glyph.addExtrema("all")
+
+        # 仕上げ処理
+        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Finish optimization':<48}\r", end=" ", flush=True)
+        anomality_repair1(glyph, proc_cnt)
+
         # Local_validate_notice(glyph, "仕上げ処理後", "warning")  # 仕上げ後の検査(デバッグ用)
-        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Process Completed!':<32}\r", end=" ", flush=True)
+        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Process Completed!':<48}\r", end=" ", flush=True)
     ######################################################################
     #                    各グリフのループ処理ここまで                    #
     ######################################################################
@@ -421,7 +379,7 @@ def main():
             if len(glyph.references) > 0:
                 print(f"合成グリフをスキップ： {glyph.glyphname} \r", end=" ", flush=True)
                 continue  # コンポジットグリフはスキップ
-            if ys_ignorlist(glyph.glyphname):
+            if ys_ignorlist(glyph):
                 print(f"無視リスト対象のグリフをスキップ： {glyph.glyphname}\r", end=" ", flush=True)
                 continue
             Local_validate_notice(glyph, "最終チェック", "warning")

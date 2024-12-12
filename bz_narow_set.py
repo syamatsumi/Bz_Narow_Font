@@ -97,6 +97,7 @@ def write_property(ini_name, input_fontstyles, vshrink_ratio, font):
 # 実際に書き込みを始める
     font.familyname = f"{FONT_FAMILY} {MPtype} {serif_type_e}{ratio}".replace("  ", " ").strip()
     font.fontname = f"{FONT_FAMILY}{MPtype}{serif_type_e}{ratio}-{weight}".replace(" ", "").strip()
+    font.fondname = f"{FONT_FAMILY}{MPtype}{serif_type_e}{ratio}-{weight}".replace(" ", "").strip()
     font.fullname = f"{FONT_FAMILY_JP}{MPtype}{serif_type_j}{ratio} {weight}"
     font.copyright = COPYRIGHT
     font.version = VERSION
@@ -139,6 +140,9 @@ at: http://scripts.sil.org/OFL""",
     font.os2_vendor = VENDOR_NAME
     font.os2_weight_width_slope_only =True
 
+    # 林檎はフラグ立てが必要らしい。めんどくせえ。
+    macstyle = 0
+
     # Panoseと近い属性の値をセット
     panose_family = 2  # Latin Text
     if serif_type == "sans":
@@ -151,6 +155,7 @@ at: http://scripts.sil.org/OFL""",
             panose_weight = 8  # Bold
             font.weight = "Bold"
             font.os2_weight = 700  # Bold
+            macstyle |= (1 << 0)
 
     elif serif_type == "serif":
         panose_serif = 2  # Cove(凹面型セリフ)
@@ -162,6 +167,7 @@ at: http://scripts.sil.org/OFL""",
             panose_weight = 7  # Demi
             font.weight = "Bold"
             font.os2_weight = 700  # Bold
+            macstyle |= (1 << 0)
 
     # 通常の日本語フォントは半角全角の違いを持つため
     # 通常使わない属性をここではセット……
@@ -169,55 +175,72 @@ at: http://scripts.sil.org/OFL""",
         panose_propotion = 9  # 等幅
         if vshrink_ratio <= 0.3:
             font.os2_width = 1    # Ultra-Condensed
+            macstyle |= (1 << 5)
         elif vshrink_ratio <= 0.4:
             font.os2_width = 2    # Extra-Condensed
+            macstyle |= (1 << 5)
         elif vshrink_ratio <= 0.5:
             font.os2_width = 3    # Condensed
+            macstyle |= (1 << 5)
         elif vshrink_ratio <= 0.6:
             font.os2_width = 4    # Semi-Condensed
+            macstyle |= (1 << 5)
         elif vshrink_ratio <= 0.7:
             font.os2_width = 5    # Medium
         elif vshrink_ratio <= 0.8:
             font.os2_width = 6    # Semi-Expanded
+            macstyle |= (1 << 6)
         elif vshrink_ratio <= 0.9:
             font.os2_width = 7    # Expanded
+            macstyle |= (1 << 6)
         elif vshrink_ratio <= 1:
             font.os2_width = 8    # Extra-Expanded
+            macstyle |= (1 << 6)
         else:
             font.os2_width = 9    # Ultra-Expanded
+            macstyle |= (1 << 6)
 
     elif vshrink_ratio <= 0.3:
         panose_propotion = 8  # Very Condensed
         font.os2_width = 1    # Ultra-Condensed
+        macstyle |= (1 << 5)
     elif vshrink_ratio <= 0.4:
         panose_propotion = 8  # Very Condensed
         font.os2_width = 2    # Extra-Condensed
+        macstyle |= (1 << 5)
     elif vshrink_ratio <= 0.5:
         panose_propotion = 6  # Condensed
         font.os2_width = 3    # Condensed
+        macstyle |= (1 << 5)
     elif vshrink_ratio <= 0.6:
         panose_propotion = 6  # Condensed
         font.os2_width = 4    # Semi-Condensed
+        macstyle |= (1 << 5)
     elif vshrink_ratio <= 0.7:
         panose_propotion = 0  # Any
         font.os2_width = 5    # Medium
     elif vshrink_ratio <= 0.8:
         panose_propotion = 5  # Extended
         font.os2_width = 6    # Semi-Expanded
+        macstyle |= (1 << 6)
     elif vshrink_ratio <= 0.9:
         panose_propotion = 5  # Extended
         font.os2_width = 7    # Expanded
+        macstyle |= (1 << 6)
     elif vshrink_ratio <= 1:
         panose_propotion = 7  # Very Extended
         font.os2_width = 8    # Extra-Expanded
+        macstyle |= (1 << 6)
     else:
         panose_propotion = 7  # Very Extended
         font.os2_width = 9    # Ultra-Expanded
+        macstyle |= (1 << 6)
+
+    # Mac Styleの書き込み。
+    font.macstyle = macstyle
 
     # Panoseの書き込み
     font.os2_panose = (panose_family, panose_serif, panose_weight, panose_propotion, 0, 0, 0, 0, 0, 0)
-
-
 
 if __name__ == "__main__":
     main()

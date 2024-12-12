@@ -11,9 +11,9 @@ from .ys_fontforge_Remove_artifacts import ys_closepath
 # ys_rm_spikecontours(glyph, c_thresh=0.1, g_thresh=0.001, p_thresh=10)
 from .ys_fontforge_Remove_artifacts import ys_rm_spikecontours
 
-# オンカーブポイント2つだけのエレメント、たぶんゴミなので削除する。
+# オンカーブポイント2つだけの孤立したエレメント、たぶんゴミなので削除する。
 # rm_littleline(glyph, min_distance=20)
-from .ys_fontforge_Remove_artifacts import ys_rm_little_line
+from .ys_fontforge_Remove_artifacts import ys_rm_isolatepath
 
 # バウンディングボックスで判定して、しきい値以下のオブジェクトは削除する。
 #  ys_rm_small_poly(glyph, width_threshold, height_threshold)

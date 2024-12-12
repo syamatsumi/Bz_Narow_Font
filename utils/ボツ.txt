@@ -219,3 +219,103 @@ def ys_upper_vector_offsetter(contour, offset):
 
     return
 
+
+# ASCII範囲にコンポジットグリフが居たら解除
+def decomposit_asc(font):
+    for codepoint in range(0x20, 0x7F):
+        if codepoint in font:
+            glyph = font[codepoint]
+            if not glyph.isWorthOutputting():
+                continue  # 出力しないグリフはスキップ
+            if len(glyph.references) > 0:
+                glyph.unlinkRef() #コンポジットグリフの参照を解除
+
+
+# ASCII範囲に基づいてフォントがプロポーショナルかを判定
+def isprop(font):
+    widths = set()  # 空のセットを初期化
+    for i in range(32, 127):  # ASCII範囲をループ
+        char = chr(i)
+        if char in font:  # グリフが存在するか確認
+            glyph = font[char]
+            if hasattr(glyph, "width"):  # 幅の属性があるか検証
+                widths.add(glyph.width)  # 幅をセットに追加
+    # 幅のバリエーション数が閾値以上ならプロポーショナル
+    if len(widths) >= IS_PROPORTIONAL_CUTOFF_VARIANCE:
+        style_is_prop = True
+    else:
+        style_is_prop = False
+    return style_is_prop
+
+# 縮小率で
+    if VSHRINK_RATIO >= 0.7:
+        stroke_flag = True
+    elif VSHRINK_RATIO < 0.7 and font_weight < 700:
+        stroke_flag = True
+    elif VSHRINK_RATIO >= 0.5 and font_weight < 500:
+        stroke_flag = True
+    else:  # 狭め方が5割越えてたり、そこに近い値な上でウェイトが重いグリフは基本的にストロークから除外。
+        stroke_flag = False
+
+
+
+        # グリフのウェイトや複雑さを勘案してストロークの幅を弱める
+        # これやるとグリフの太さがガタガタになって見た目がおかしくなるから一旦封印。
+        # point_count, stroke_width, stroke_flag = custom_stroke_width(glyph, font_weight, base_stroke_width, stroke_flag)
+        # print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Point Count'f'{point_count:<6}':<48}\r", end=" ", flush=True)
+
+
+# フォントウエイトと確認中グリフのポイント数を勘案してストロークの幅を変える
+def custom_stroke_width(glyph, font_weight, base_stroke_width, stroke_flag):
+    point_count = sum(len(contour) for contour in glyph.layers["Fore"])
+    # 幅の縮小率が高いほど発動条件をシビアになる。
+    sleshpt = STRWR_POINTS * VSHRINK_RATIO
+
+    # 点の数が規定値を上回るか、ウエイトが高いとナーフ発動。
+    if point_count > sleshpt or font_weight > STRWR_WEIGHT:
+
+        # 点の数が多いほどストロークが細くなる
+        stroke_ratio = sleshpt / point_count
+
+        # 縮小率が高いほどストロークが細くなる
+        stroke_ratio = stroke_ratio * VSHRINK_RATIO
+
+        # REDUCE RATIOを反映させる
+        stroke_ratio = stroke_ratio * REDUCE_RATIO
+
+        # 偶数にするために半分に割って整数化して倍にする。
+        stroke_width = round((base_stroke_width * stroke_ratio)/2)*2
+    else:  # 条件に一致しないならなにもしない
+        stroke_width = base_stroke_width
+
+    # ストローク幅が10を切るならstroke_flagをFalseにする
+    if stroke_width < 10:
+        stroke_flag = False
+    return point_count, stroke_width, stroke_flag
+
+
+# 最後にTTFの仕様に合わせた最適化を実施
+def finish_optimise(glyph, counter):
+    anomality_repair1(glyph, counter)
+    anomality_repair1(glyph, counter)
+    anomality_repair1(glyph, counter)
+
+    ys_repair_Self_Insec(glyph, 3)
+    glyph.round()
+    glyph.removeOverlap()
+    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+    ys_rm_small_poly(glyph, 25, 25)
+
+    ys_repair_Self_Insec(glyph, 3)
+    glyph.round()
+    glyph.removeOverlap()
+    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+    ys_rm_small_poly(glyph, 25, 25)
+
+    if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
+        ys_repair_si_chain(glyph, counter)
+    if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
+        ys_repair_si_chain(glyph, counter)
+    glyph.addExtrema("all")
+
+

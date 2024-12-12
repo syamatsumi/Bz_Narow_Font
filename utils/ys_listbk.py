@@ -1,5 +1,7 @@
 #!fontforge --lang=py -script
 
+import fontforge
+
 def ys_blacklist(glyph, flag):
     blacklist_set = {
         "uni2187",  # ↇ
@@ -140,9 +142,9 @@ def ys_blacklist(glyph, flag):
     if glyph.unicode != -1:  # コードポイントを持つ場合のみチェック
         for r in blacklist_ranges:
             if glyph.unicode in r:
-                return False  # ブラックリストに該当する場合はFalseを返す
+                return False  # リストに該当する場合はFalseを返す
 
-    # グリフ名がブラックリストにあるかチェック
+    # グリフ名がリストにあるかチェック
     if glyph.glyphname in blacklist_set:
         return False
 

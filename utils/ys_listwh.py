@@ -1,5 +1,7 @@
 #!fontforge --lang=py -script
 
+import fontforge
+
 def ys_whitelist(glyph, flag):
     whitelist_set = {
         "uni7532",  # 甲
@@ -62,10 +64,10 @@ def ys_whitelist(glyph, flag):
         "uni8DB3",  # 足
         "uni6238",  # 戸
         "uni6597",  # 斗
-        "unifb01",  # ﬁ
-        "unifb02",  # ﬂ
-        "unife45",  # ﹅
-        "unife46",  # ﹆
+        "uniFB01",  # ﬁ
+        "uniFB02",  # ﬂ
+        "uniFE45",  # ﹅
+        "uniFE46",  # ﹆
     }
     # ホワイトリストのコードポイント範囲
     whitelist_ranges = [
@@ -83,7 +85,7 @@ def ys_whitelist(glyph, flag):
             if glyph.unicode in r:
                 return True  # ホワイトリストに該当する場合はTrueを返す
 
-    # グリフ名がホワイトリストにあるかチェック
+    # グリフ名がリストにあるかチェック
     if glyph.glyphname in whitelist_set:
         return True
 

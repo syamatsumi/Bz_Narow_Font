@@ -1,25 +1,6 @@
 Warning: SplinePointListIsClockwise found no usable line even at 45x magnification.
 Warning: SplinePointListIsClockwise found no usable line even at 45x magnification.
 Warning: SplinePointListIsClockwise found no usable line even at 36x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 45x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 45x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 45x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 45x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 45x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 45x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 45x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 45x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 36x magnification.
-Internal Error: Invalid 2nd order spline in SplineRefigure2
-Warning: SplinePointListIsClockwise found no usable line even at 36x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 36x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 36x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 36x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 36x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 36x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 36x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 36x magnification.
-Warning: SplinePointListIsClockwise found no usable line even at 36x magnification.
 Internal Error (overlap) in uni3836: monotonic is both needed and unneeded (1970,291)->(2004.02,-0.377148). y=-0.377148 (prev=204)
 Internal Error (overlap) in uni3836: Winding number did not return to 0 when y=-0.377148
 Internal Error (overlap) in uni3836: monotonic is both needed and unneeded (1970,291)->(2004.02,-0.377148). y=-0.377148 (prev=204)

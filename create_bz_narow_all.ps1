@@ -80,7 +80,7 @@ $commands = @(
 )
 
 # 最大同時実行数
-$maxParallel = 12
+$maxParallel = 14
 
 # 実行中のプロセスを管理
 $runningJobs = @()

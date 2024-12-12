@@ -1,7 +1,16 @@
 #!fontforge --lang=py -script
 
-def ys_ignorlist(glyphname):
+import fontforge
+
+def ys_ignorlist(glyph):
     ignorlist_set = {
+        "uni23AB.vert",
+        "uni23AC.vert",
+        "uni23AD.vert",
+        "uni23A7.vert",
+        "uni23A8.vert",
+        "uni23A9.vert",
+        "uni00A0.vert",
         "exclam.vert",
         "numbersign.vert",
         "dollar.vert",
@@ -193,8 +202,8 @@ def ys_ignorlist(glyphname):
         "uniFF9F.vert",  # ﾟ
     }
 
-    # グリフ名が無視リストにあるかチェック
-    if glyphname in ignorlist_set:
+    # グリフ名がリストにあるかチェック
+    if glyph.glyphname in ignorlist_set:
         return True
     else:
         return False

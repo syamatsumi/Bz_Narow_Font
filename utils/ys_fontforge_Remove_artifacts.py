@@ -88,7 +88,8 @@ def ys_rm_spikecontours(glyph, c_thresh=0.1, g_thresh=0.001, p_thresh=10):
         length, points = contour_length_and_points(contour)
         # 長さがないなら面積比も0で確定。
         if length == 0:
-            ratio = 0.0
+            c_ratio = 0.0
+            g_ratio = 0.0
 
         # 入り組んだコンター（＊など）は、外周長に対する面積が
         # 極端に低く出るため、頂点数が多く、かつコンターの外周長が
@@ -130,7 +131,7 @@ def ys_rm_spikecontours(glyph, c_thresh=0.1, g_thresh=0.001, p_thresh=10):
 # 問答無用で削除する場合はmin_distanceをクソデカに設定すること。
 # 何故かメイン関数に入れるとグリフが消える問題、たぶん参照渡しが原因。
 # おそらくこれで解決したハズ……
-def ys_rm_little_line(glyph, min_distance=20):
+def ys_rm_isolatepath(glyph, min_distance=20):
     ok_paths = []  # 有効なパスを保存するリスト
     for contour in glyph.foreground:
         # オンクルーブポイントを抽出
