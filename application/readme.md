@@ -1,1 +1,0 @@
-このフォルダにunitettecとポータブル版のFontForgeを入れて作成しています。
