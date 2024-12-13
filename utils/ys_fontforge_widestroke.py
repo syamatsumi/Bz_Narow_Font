@@ -15,7 +15,7 @@ def ys_widestroke(glyph, stroke_width, storoke_height, vshrink_ratio, counter=1)
     for contour in glyph.foreground:  # 各パス（輪郭）をループ
         if contour.isClockwise():
             is_all_ccw = False
-            break
+            break  # 1つでも時計回りなら確認を終了
 
     # グリフのバックアップを取得
     glyph_backup = [contour.dup() for contour in glyph.foreground]
@@ -47,6 +47,32 @@ def ys_widestroke(glyph, stroke_width, storoke_height, vshrink_ratio, counter=1)
         arcsclip="ratio"  # Default="auto" "arcs" "svg2" "ratio"
     )
 
+    # ストロークで発生したノイズを除去する。
+    # 本来のベクトルと水平・垂直の方向に発生したポイントのズレによって、
+    # 所により線が行ったり来たりの繰り返しになって極端な鋭角の繰り返しが発生する。
+    # この作業はアーティファクトの除去が目的というより、
+    # 後にアーティファクトが発生するのを予防するためのもの。
+    ys_closepath(glyph)
+    ys_repair_Self_Insec(glyph, 1)
+    glyph.round()
+    glyph.addExtrema("all")
+    glyph.removeOverlap()
+
+    # 上の処理で千切れたツノを除去してもう一度ツノ折り。
+    # ここで出るノイズは角度が若干鈍い可能性あるから条件緩め。
+    # パスを閉じるタイミングとか特殊なんで、
+    # 処理内容が似てるからって関数に分離しない方が良いかも。
+    ys_closepath(glyph)
+    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+    ys_repair_Self_Insec(glyph, 3)
+    glyph.round()
+    glyph.addExtrema("all")
+    glyph.removeOverlap()
+    # ゴミ掃除
+    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+    ys_rm_isolatepath(glyph)
+    ys_rm_small_poly(glyph, 20, 30)
+
     # スパイク状の独立したコンターを削除する。
     # 変化が無くなるまで繰り返す。
     stroke_prev = [contour.dup() for contour in glyph.foreground]
@@ -72,19 +98,21 @@ def ys_widestroke(glyph, stroke_width, storoke_height, vshrink_ratio, counter=1)
                     ys_repair_Self_Insec(glyph, 3)
                     ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
 
-    # 修復チェインの繰り返し実行。変化がなくなるか悪化するまで繰り返し。
-    ys_anomality_repair(glyph, counter)
-
-    # 元のグリフと合成
-    for contour in glyph_backup:  # 保存していたパスの書き戻し
+    # 元のグリフと合成、保存していたパスの書き戻し
+    for contour in glyph_backup:
         glyph.foreground += contour
-    if is_all_ccw:  # 元々通常パス(CCW)しか無いグリフの場合
+    # 元々通常パス(CCW)しか無いグリフの場合
+    if is_all_ccw:
         for contour in glyph.foreground:
             if contour.isClockwise():  # 反転パス(CW)の場合
                 contour.reverseDirection()  # パスを反転させる
+    glyph.round()
+    glyph.addExtrema("all")
     glyph.removeOverlap()  # 結合
 
     # 修復チェインの繰り返し実行。変化がなくなるか悪化するまで繰り返し。
+    ys_repair_si_chain(glyph, counter)
+    ys_repair_si_chain(glyph, counter)
     ys_anomality_repair(glyph, counter)
     return
 
@@ -92,6 +120,7 @@ def ys_widestroke(glyph, stroke_width, storoke_height, vshrink_ratio, counter=1)
 
 # 修復チェインの繰り返し実行。変化がなくなるか悪化するなら終了。
 def ys_anomality_repair(glyph, counter):
+    ys_repair_si_chain(glyph, counter)
     if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
         previous_flags = glyph.validate(1) & 0x0FF
         ys_repair_si_chain(glyph, counter)

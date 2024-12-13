@@ -3,25 +3,27 @@
 import fontforge
 import math
 
-# ŠJ‚¢‚½ƒpƒX‚ğ•Â‚¶‚ÄA•Â‚¶‚ç‚ê‚È‚¢ƒpƒX‚ğÌ‚Ä‚éŠÖ”
+# é–‹ã„ãŸãƒ‘ã‚¹ã‚’é–‰ã˜ã‚‹ã ã‘ã®é–¢æ•°ã€‚
 def ys_closepath(glyph):
-    # ƒpƒX‚ª•Â‚¶‚ç‚ê‚½ƒRƒ“ƒ^[‚ğOKƒpƒX•Ï”‚Éƒuƒ`‚ŞA
-    ok_paths = [contour.dup() for contour in glyph.foreground if contour.closed]
-    # ƒpƒX‚ªŠJ‚¢‚½ƒRƒ“ƒ^[(‚³‚Á‚«•Û‘¶‚Å‚«‚Ä‚È‚¢ƒRƒ“ƒ^[)‚ğNG•Ï”‚Éƒuƒ`‚Ş
-    ng_paths = [contour.dup() for contour in glyph.foreground if contour not in ok_paths]
-    # ƒtƒHƒAƒOƒ‰ƒEƒ“ƒh‚ğƒNƒŠƒA‚µ‚ÄANGƒpƒX•Ï”‚É“ü‚ê‚Ä‚½ƒRƒ“ƒ^[‚ğ‘‚«–ß‚·
-    glyph.foreground = fontforge.layer() # ƒtƒHƒAƒOƒ‰ƒEƒ“ƒh‚ğƒNƒŠƒA
-    for contour in ng_paths:  # NGƒpƒX‚Ì‘‚«–ß‚µ
-        glyph.foreground += contour
-    # ŠJ‚¢‚½ƒpƒX‚ğ•Â‚¶‚é‘€ì
+    close_paths = []
     for contour in glyph.foreground:
         contour.addExtrema("all")
-        contour.closed = True  # ‹­§“I‚É•Â‚¶‚é
+        if contour.closed:
+            close_paths.append(contour.dup())
+        # ç¹‹ã„ã§ã‚‚ã‚´ãƒŸã«ã—ã‹ãªã‚‰ãªã„ç›´ç·šã®ã¿ã®ãƒ‘ã‚¹ã¯ç„¡è¦–ã€‚
+        elif len(contour) > 2:
+            start_point = contour[0]
+            end_point = contour[-1]
+            # å§‹ç‚¹ã¨çµ‚ç‚¹ãŒç•°ãªã‚‹ä½ç½®ã«ã‚ã‚‹å ´åˆã¯ç·šã‚’è¿½åŠ ã€‚
+            if start_point.x != end_point.x or start_point.y != end_point.y:
+                contour.lineTo(start_point.x, start_point.y)
+            # ã‚³ãƒ³ã‚¿ãƒ¼ã‚’é–‰ã˜ã‚‹
+            contour.closed = True
+            close_paths.append(contour.dup())
 
-    # ‹­§“I‚É•Â‚¶‚é‚±‚Æ‚ª‚Å‚«‚½ƒpƒX‚ğOKƒpƒX•Ï”‚Éƒuƒ`‚ŞA
-    ok_paths += [contour.dup() for contour in glyph.foreground if contour.closed]
-    glyph.foreground = fontforge.layer()  # ‚Ü‚¾c‚Á‚Ä‚éƒSƒ~‚Í’ú‚ß‚Äƒ|ƒCB
-    for contour in ok_paths:  # OKƒpƒX‚ğ‘‚«–ß‚·
+    # ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’ãƒªã‚»ãƒƒãƒˆã—ã¦é–‰ã˜ãŸãƒ‘ã‚¹ã‚’æ›¸ãæˆ»ã™
+    glyph.foreground = fontforge.layer()
+    for contour in close_paths:
         glyph.foreground += contour
     
     glyph.addExtrema("all")
@@ -29,9 +31,9 @@ def ys_closepath(glyph):
 
 
 
-# –ÊÏ‚ğŠÈˆÕ“I‚ÉŒvZ‚·‚éŠÖ”
-# “–‰‚ÍƒIƒ“ƒJ[ƒuƒ|ƒCƒ“ƒg‚¾‚¯Œv‘ª‚µ‚Ä‚½‚¯‚ÇA‚æ‚­l‚¦‚½‚çü’·‚ÉŠÖ‚µ‚Ä‚Í
-# ‘S‚Ä‚Ìƒ|ƒCƒ“ƒg‚ğü•ª‹ß—‚³‚¹‚½•û‚ª‚æ‚è³Šm‚È‚Ì‚Å•ÏXB
+# é¢ç©ã‚’ç°¡æ˜“çš„ã«è¨ˆç®—ã™ã‚‹é–¢æ•°
+# å½“åˆã¯ã‚ªãƒ³ã‚«ãƒ¼ãƒ–ãƒã‚¤ãƒ³ãƒˆã ã‘è¨ˆæ¸¬ã—ã¦ãŸã‘ã©ã€ã‚ˆãè€ƒãˆãŸã‚‰å‘¨é•·ã«é–¢ã—ã¦ã¯
+# å…¨ã¦ã®ãƒã‚¤ãƒ³ãƒˆã‚’ç·šåˆ†è¿‘ä¼¼ã•ã›ãŸæ–¹ãŒã‚ˆã‚Šæ­£ç¢ºãªã®ã§å¤‰æ›´ã€‚
 def contour_area_and_points(contour):
     try:
         on_pts = []
@@ -46,15 +48,15 @@ def contour_area_and_points(contour):
         for i in range(len(on_pts)):
             j = (i + 1) % len(on_pts)
             area += x[i]*y[j] - y[i]*x[j]
-    except AttributeError as e:  # ‘®«‚Ì–â‘è‚ª‚ ‚éê‡
+    except AttributeError as e:  # å±æ€§ã®å•é¡ŒãŒã‚ã‚‹å ´åˆ
         print(f"AttributeError: {e}")
         return 0.0, 0
-    except Exception as e:  # ‚»‚êˆÈŠO‚Ì—\Šú‚¹‚ÊƒGƒ‰[
+    except Exception as e:  # ãã‚Œä»¥å¤–ã®äºˆæœŸã›ã¬ã‚¨ãƒ©ãƒ¼
         print(f"Unexpected error: {e}")
         return 0.0, 0
     return abs(area)*0.5, len(on_pts)
 
-# ƒRƒ“ƒ^[‚Ìü’·‚ğŠÈˆÕ“I‚ÉŒvZ‚·‚éŠÖ”
+# ã‚³ãƒ³ã‚¿ãƒ¼ã®å‘¨é•·ã‚’ç°¡æ˜“çš„ã«è¨ˆç®—ã™ã‚‹é–¢æ•°
 def contour_length_and_points(contour):
     try:
         all_pts = []
@@ -66,109 +68,109 @@ def contour_length_and_points(contour):
             dx = all_pts[j].x - all_pts[i].x
             dy = all_pts[j].y - all_pts[i].y
             length += math.sqrt(dx*dx + dy*dy)
-    except AttributeError as e:  # ‘®«‚Ì–â‘è‚ª‚ ‚éê‡
+    except AttributeError as e:  # å±æ€§ã®å•é¡ŒãŒã‚ã‚‹å ´åˆ
         print(f"AttributeError: {e}")
         return 0.0, 0
-    except Exception as e:  # ‚»‚êˆÈŠO‚Ì—\Šú‚¹‚ÊƒGƒ‰[
+    except Exception as e:  # ãã‚Œä»¥å¤–ã®äºˆæœŸã›ã¬ã‚¨ãƒ©ãƒ¼
         print(f"Unexpected error: {e}")
         return 0.0, 0
     return length, len(all_pts)
 
-# ü’·‚É‘Î‚µ‚Ä‹É’[‚É–ÊÏ‚Ì¬‚³‚ÈƒRƒ“ƒ^[‚ğíœ‚·‚éŠÖ”
+# å‘¨é•·ã«å¯¾ã—ã¦æ¥µç«¯ã«é¢ç©ã®å°ã•ãªã‚³ãƒ³ã‚¿ãƒ¼ã‚’å‰Šé™¤ã™ã‚‹é–¢æ•°
 def ys_rm_spikecontours(glyph, c_thresh=0.1, g_thresh=0.001, p_thresh=10):
-    ok_paths = []  # —LŒø‚ÈƒpƒX‚ğ•Û‘¶‚·‚éƒŠƒXƒg
-    # ƒOƒŠƒt‘S‘Ì‚Ì–ÊÏ‚ğæ“¾
+    ok_paths = []  # æœ‰åŠ¹ãªãƒ‘ã‚¹ã‚’ä¿å­˜ã™ã‚‹ãƒªã‚¹ãƒˆ
+    # ã‚°ãƒªãƒ•å…¨ä½“ã®é¢ç©ã‚’å–å¾—
     g_bbox = glyph.boundingBox()  # bbox: (xMin, yMin, xMax, yMax)
     gmax_area = (g_bbox[2] - g_bbox[0]) * (g_bbox[3] - g_bbox[1])
 
-    if glyph.validate(1) & 0x01:  # ‹ó‚¢‚½ƒpƒX‚ª‘¶İ‚·‚éê‡
-        ys_closepath(glyph)  # ‹ó‚¢‚½ƒpƒX‚ğ‹­§“I‚É•Â‚¶‚éŠÖ”
+    if glyph.validate(1) & 0x01:  # ç©ºã„ãŸãƒ‘ã‚¹ãŒå­˜åœ¨ã™ã‚‹å ´åˆ
+        ys_closepath(glyph)  # ç©ºã„ãŸãƒ‘ã‚¹ã‚’å¼·åˆ¶çš„ã«é–‰ã˜ã‚‹é–¢æ•°
 
     for contour in glyph.foreground:
         length, points = contour_length_and_points(contour)
-        # ’·‚³‚ª‚È‚¢‚È‚ç–ÊÏ”ä‚à0‚ÅŠm’èB
+        # é•·ã•ãŒãªã„ãªã‚‰é¢ç©æ¯”ã‚‚0ã§ç¢ºå®šã€‚
         if length == 0:
             c_ratio = 0.0
             g_ratio = 0.0
 
-        # “ü‚è‘g‚ñ‚¾ƒRƒ“ƒ^[i–‚È‚Çj‚ÍAŠOü’·‚É‘Î‚·‚é–ÊÏ‚ª
-        # ‹É’[‚É’á‚­o‚é‚½‚ßA’¸“_”‚ª‘½‚­A‚©‚ÂƒRƒ“ƒ^[‚ÌŠOü’·‚ª
-        # BBOX‚ÌŠOü’·‚ğ’´‚¦‚éê‡‚Ì‚İABBOX‚Ì–ÊÏ‚Æ”äŠr‚·‚éB
+        # å…¥ã‚Šçµ„ã‚“ã ã‚³ãƒ³ã‚¿ãƒ¼ï¼ˆï¼Šãªã©ï¼‰ã¯ã€å¤–å‘¨é•·ã«å¯¾ã™ã‚‹é¢ç©ãŒ
+        # æ¥µç«¯ã«ä½ãå‡ºã‚‹ãŸã‚ã€é ‚ç‚¹æ•°ãŒå¤šãã€ã‹ã¤ã‚³ãƒ³ã‚¿ãƒ¼ã®å¤–å‘¨é•·ãŒ
+        # BBOXã®å¤–å‘¨é•·ã‚’è¶…ãˆã‚‹å ´åˆã®ã¿ã€BBOXã®é¢ç©ã¨æ¯”è¼ƒã™ã‚‹ã€‚
         else:
-            if points > p_thresh:  # “_‚Ì”‚ª‘½‚¢
+            if points > p_thresh:  # ç‚¹ã®æ•°ãŒå¤šã„æ™‚
                 bbox = contour.boundingBox()
-                # [xmin, ymin, xmax, ymax] ‚ğ•Ô‚·‘z’è‚ÅŒvZB
+                # [xmin, ymin, xmax, ymax] ã‚’è¿”ã™æƒ³å®šã§è¨ˆç®—ã€‚
                 bbox_pe = 2 * ((bbox[2] - bbox[0]) + (bbox[3] - bbox[1]))
 
-                # BBOX‚Ìü’·‚æ‚è’·‚¢‚Æ‚«‚ÍBBOX‚Ì–ÊÏ‚ª”äŠr‘ÎÛ
+                # BBOXã®å‘¨é•·ã‚ˆã‚Šé•·ã„ã¨ãã¯BBOXã®é¢ç©ãŒæ¯”è¼ƒå¯¾è±¡
                 if length > bbox_pe:
                     cmax_area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
                 else:
                     cmax_area = (length/4)**2
-            else:  # ã‹L‚Ì‚Ç‚¿‚ç‚ÌğŒ‚É‚à“–‚Ä‚Í‚Ü‚ç‚È‚¢ê‡‚ÍŠOü’·Šî€B
+            else:  # ä¸Šè¨˜ã®ã©ã¡ã‚‰ã®æ¡ä»¶ã«ã‚‚å½“ã¦ã¯ã¾ã‚‰ãªã„å ´åˆã¯å¤–å‘¨é•·åŸºæº–ã€‚
                 cmax_area = (length/4)**2
 
-            # ƒRƒ“ƒ^[‚ÌŠTZ–ÊÏ‚ğ‹‚ß‚Äcmax_area‚Æ”äŠr‚·‚éB
+            # ã‚³ãƒ³ã‚¿ãƒ¼ã®æ¦‚ç®—é¢ç©ã‚’æ±‚ã‚ã¦cmax_areaã¨æ¯”è¼ƒã™ã‚‹ã€‚
             area, _ = contour_area_and_points(contour)
             c_ratio = area/cmax_area if cmax_area > 0 else 0.0
-            # ‘S‘Ì‚É”ä‚µ‚Ä‚Ì–ÊÏ”ä‚à”äŠr‚·‚éB
+            # å…¨ä½“ã«æ¯”ã—ã¦ã®é¢ç©æ¯”ã‚‚æ¯”è¼ƒã™ã‚‹ã€‚
             g_ratio = area/gmax_area if gmax_area > 0 else 0.0
 
-        # ‚Ç‚¿‚ç‚©‚ÌŠî€‚æ‚è–ÊÏ”ä‚ª‘å‚«‚¯‚ê‚ÎOK
+        # ã©ã¡ã‚‰ã‹ã®åŸºæº–ã‚ˆã‚Šé¢ç©æ¯”ãŒå¤§ãã‘ã‚Œã°OK
         if c_ratio > c_thresh or g_ratio > g_thresh:
-            ok_paths.append(contour.dup())  # ‡ŠiƒpƒX‚É’Ç‰Á
+            ok_paths.append(contour.dup())  # åˆæ ¼ãƒ‘ã‚¹ã«è¿½åŠ 
 
-    # ƒtƒHƒAƒOƒ‰ƒEƒ“ƒh‚ğƒNƒŠƒA‚µ‚ÄAOKƒpƒX•Ï”‚É“ü‚ê‚Ä‚½ƒRƒ“ƒ^[‚ğ‘‚«–ß‚·
-    glyph.foreground = fontforge.layer() # ƒtƒHƒAƒOƒ‰ƒEƒ“ƒh‚ğƒNƒŠƒA
-    for contour in ok_paths:  # OKƒpƒX‚Ì‘‚«–ß‚µ
+    # ãƒ•ã‚©ã‚¢ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã‚’ã‚¯ãƒªã‚¢ã—ã¦ã€OKãƒ‘ã‚¹å¤‰æ•°ã«å…¥ã‚Œã¦ãŸã‚³ãƒ³ã‚¿ãƒ¼ã‚’æ›¸ãæˆ»ã™
+    glyph.foreground = fontforge.layer() # ãƒ•ã‚©ã‚¢ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã‚’ã‚¯ãƒªã‚¢
+    for contour in ok_paths:  # OKãƒ‘ã‚¹ã®æ›¸ãæˆ»ã—
         glyph.foreground += contour
     return
 
 
 
-# ƒIƒ“ƒJ[ƒu“_‚Ìƒm[ƒh”‚ª2‚æ‚è‘½‚¢(‚Â‚Ü‚è3ˆÈã)‚ÌƒpƒX‚ğok_paths‚É•Û‘¶B
-# 2“_ŠÔ‚Ì‹——£‚ªˆê’è”ˆÈã‚ ‚é‚È‚çAƒJƒ}ƒ{ƒRó‚ÌŒ`‚ğì‚Á‚Ä‚é‰Â”\«‚ª‚ ‚éB
-# –â“š–³—p‚Åíœ‚·‚éê‡‚Ímin_distance‚ğƒNƒ\ƒfƒJ‚Éİ’è‚·‚é‚±‚ÆB
-# ‰½ŒÌ‚©ƒƒCƒ“ŠÖ”‚É“ü‚ê‚é‚ÆƒOƒŠƒt‚ªÁ‚¦‚é–â‘èA‚½‚Ô‚ñQÆ“n‚µ‚ªŒ´ˆöB
-# ‚¨‚»‚ç‚­‚±‚ê‚Å‰ğŒˆ‚µ‚½ƒnƒYcc
+# ã‚ªãƒ³ã‚«ãƒ¼ãƒ–ç‚¹ã®ãƒãƒ¼ãƒ‰æ•°ãŒ2ã‚ˆã‚Šå¤šã„(ã¤ã¾ã‚Š3ä»¥ä¸Š)ã®ãƒ‘ã‚¹ã‚’ok_pathsã«ä¿å­˜ã€‚
+# 2ç‚¹é–“ã®è·é›¢ãŒä¸€å®šæ•°ä»¥ä¸Šã‚ã‚‹ãªã‚‰ã€ã‚«ãƒãƒœã‚³çŠ¶ã®å½¢ã‚’ä½œã£ã¦ã‚‹å¯èƒ½æ€§ãŒã‚ã‚‹ã€‚
+# å•ç­”ç„¡ç”¨ã§å‰Šé™¤ã™ã‚‹å ´åˆã¯min_distanceã‚’ã‚¯ã‚½ãƒ‡ã‚«ã«è¨­å®šã™ã‚‹ã“ã¨ã€‚
+# ä½•æ•…ã‹ãƒ¡ã‚¤ãƒ³é–¢æ•°ã«å…¥ã‚Œã‚‹ã¨ã‚°ãƒªãƒ•ãŒæ¶ˆãˆã‚‹å•é¡Œã€ãŸã¶ã‚“å‚ç…§æ¸¡ã—ãŒåŸå› ã€‚
+# ãŠãã‚‰ãã“ã‚Œã§è§£æ±ºã—ãŸãƒã‚ºâ€¦â€¦
 def ys_rm_isolatepath(glyph, min_distance=20):
-    ok_paths = []  # —LŒø‚ÈƒpƒX‚ğ•Û‘¶‚·‚éƒŠƒXƒg
+    ok_paths = []  # æœ‰åŠ¹ãªãƒ‘ã‚¹ã‚’ä¿å­˜ã™ã‚‹ãƒªã‚¹ãƒˆ
     for contour in glyph.foreground:
-        # ƒIƒ“ƒNƒ‹[ƒuƒ|ƒCƒ“ƒg‚ğ’Šo
+        # ã‚ªãƒ³ã‚¯ãƒ«ãƒ¼ãƒ–ãƒã‚¤ãƒ³ãƒˆã‚’æŠ½å‡º
         on_curve_points = [point for point in contour if point.on_curve]
         
-        # ƒIƒ“ƒNƒ‹[ƒuƒ|ƒCƒ“ƒg‚ª2“_‚Ìê‡‚É‹——£‚ğŒvZ
+        # ã‚ªãƒ³ã‚¯ãƒ«ãƒ¼ãƒ–ãƒã‚¤ãƒ³ãƒˆãŒ2ç‚¹ã®å ´åˆã«è·é›¢ã‚’è¨ˆç®—
         if len(on_curve_points) == 2:
             distance = math.sqrt(
                 (on_curve_points[0].x - on_curve_points[1].x)**2
                 +(on_curve_points[0].y - on_curve_points[1].y)**2
                 )
             if distance > min_distance:
-                ok_paths.append(contour.dup())  # ‹——£‚ª’·‚¯‚ê‚ÎOK
+                ok_paths.append(contour.dup())  # è·é›¢ãŒé•·ã‘ã‚Œã°OK
         elif len(on_curve_points) > 2:
-            # ƒIƒ“ƒNƒ‹[ƒuƒ|ƒCƒ“ƒg‚ª3“_ˆÈã‚Ìê‡‚Í–³ğŒ‚ÅOK
-            ok_paths.append(contour)
+            # ã‚ªãƒ³ã‚¯ãƒ«ãƒ¼ãƒ–ãƒã‚¤ãƒ³ãƒˆãŒ3ç‚¹ä»¥ä¸Šã®å ´åˆã¯ç„¡æ¡ä»¶ã§OK
+            ok_paths.append(contour.dup())
     return
 
 
 
-# ƒoƒEƒ“ƒfƒBƒ“ƒOƒ{ƒbƒNƒX‚Å”»’è‚µ‚ÄA
-# ‚µ‚«‚¢’lˆÈ‰º‚ÌƒIƒuƒWƒFƒNƒg‚Ííœ‚·‚éB
+# ãƒã‚¦ãƒ³ãƒ‡ã‚£ãƒ³ã‚°ãƒœãƒƒã‚¯ã‚¹ã§åˆ¤å®šã—ã¦ã€
+# ã—ãã„å€¤ä»¥ä¸‹ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã¯å‰Šé™¤ã™ã‚‹ã€‚
 def ys_rm_small_poly(glyph, width_threshold, height_threshold):
-    ng_paths = []  # ‹óƒŠƒXƒg‚ğ‰Šú‰»
-    for contour in glyph.foreground:  # ŠeƒpƒXi—ÖŠsj‚ğƒ‹[ƒv
+    ng_paths = []  # ç©ºãƒªã‚¹ãƒˆã‚’åˆæœŸåŒ–
+    for contour in glyph.foreground:  # å„ãƒ‘ã‚¹ï¼ˆè¼ªéƒ­ï¼‰ã‚’ãƒ«ãƒ¼ãƒ—
         contour.addExtrema("all")
         bbox = contour.boundingBox()
         xmin, ymin, xmax, ymax = bbox
         width = xmax - xmin
         height = ymax - ymin
-        if width <= width_threshold and height <= height_threshold:  # ğŒ‚ğƒ`ƒFƒbƒN
-            ng_paths.append(contour.dup())  # ğŒ‚ğ–‚½‚·‚à‚Ì‚ğƒŠƒXƒg‚É’Ç‰Á
-    # –â‘è‚Ì‚È‚¢ƒpƒX(‚³‚Á‚«•Û‘¶‚Å‚«‚Ä‚È‚¢ƒRƒ“ƒ^[)‚ğOK•Ï”‚Éƒuƒ`‚Ş
+        if width <= width_threshold and height <= height_threshold:  # æ¡ä»¶ã‚’ãƒã‚§ãƒƒã‚¯
+            ng_paths.append(contour.dup())  # æ¡ä»¶ã‚’æº€ãŸã™ã‚‚ã®ã‚’ãƒªã‚¹ãƒˆã«è¿½åŠ 
+    # å•é¡Œã®ãªã„ãƒ‘ã‚¹(ã•ã£ãä¿å­˜ã§ãã¦ãªã„ã‚³ãƒ³ã‚¿ãƒ¼)ã‚’OKå¤‰æ•°ã«ãƒ–ãƒè¾¼ã‚€
     ok_paths = [contour.dup() for contour in glyph.foreground if contour not in ng_paths]
-    # ƒtƒHƒAƒOƒ‰ƒEƒ“ƒh‚ğƒNƒŠƒA‚µ‚ÄAOKƒpƒX•Ï”‚É“ü‚ê‚Ä‚½ƒRƒ“ƒ^[‚ğ‘‚«–ß‚·
-    glyph.foreground = fontforge.layer() # ƒtƒHƒAƒOƒ‰ƒEƒ“ƒh‚ğƒNƒŠƒA
-    for contour in ok_paths:  # okƒpƒX‚Ì‘‚«–ß‚µ
+    # ãƒ•ã‚©ã‚¢ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã‚’ã‚¯ãƒªã‚¢ã—ã¦ã€OKãƒ‘ã‚¹å¤‰æ•°ã«å…¥ã‚Œã¦ãŸã‚³ãƒ³ã‚¿ãƒ¼ã‚’æ›¸ãæˆ»ã™
+    glyph.foreground = fontforge.layer() # ãƒ•ã‚©ã‚¢ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã‚’ã‚¯ãƒªã‚¢
+    for contour in ok_paths:  # okãƒ‘ã‚¹ã®æ›¸ãæˆ»ã—
         glyph.foreground += contour
 
 

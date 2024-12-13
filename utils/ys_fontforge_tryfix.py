@@ -6,36 +6,36 @@ from .ys_fontforge_Remove_artifacts import ys_closepath, ys_rm_spikecontours, ys
 from .ys_fontforge_Repair_Self_Intersections import ys_repair_Self_Insec
 
 def ys_repair_si_chain(glyph, proc_cnt):
-    if glyph.validate(1) & 0x01:  # ŠJ‚¢‚½ƒpƒX‚ğŒŸo
-        print(f"now:{glyph.glyphname:<15} {'Anomality Repair cntclose':<48}\r", end=" ", flush=True)
-        ys_closepath(glyph)  # ƒpƒX‚ğ•Â‚¶‚é•‚»‚Ì‘¼ˆ—
-    ys_rm_isolatepath(glyph)  # ŒÇ—§‚µ‚½ƒSƒ~ƒpƒX‚ğíœ
-    
-    mode = f"{glyph.validate(1):x}"
+    if glyph.validate(1) & 0x01:  # é–‹ã„ãŸãƒ‘ã‚¹ã‚’æ¤œå‡º
+        ys_closepath(glyph)  # ãƒ‘ã‚¹ã‚’é–‰ã˜ã‚‹
+    ys_rm_isolatepath(glyph)  # å­¤ç«‹ã—ãŸã‚´ãƒŸãƒ‘ã‚¹ã‚’å‰Šé™¤
 
-    # ˆ—–ß‚µ—p‚ÌƒoƒbƒNƒAƒbƒv‚ğæ“¾
-    glyph.round()  # ®”‰»
+    # å‡¦ç†æˆ»ã—ç”¨ã®ãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—ã‚’å–å¾—
+    glyph.round()  # æ•´æ•°åŒ–
     stroke_backup = [contour.dup() for contour in glyph.foreground]
 
+    mode = f"{glyph.validate(1):x}"
     if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
         print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair 1 mode'f'{mode}':<48}\r", end=" ", flush=True)
         previous_flags = glyph.validate(1) & 0x0FF
+        ys_repair_Self_Insec(glyph, 1)
+        ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+        glyph.round()
+        glyph.addExtrema("all")
+        glyph.removeOverlap()
+        ys_rm_isolatepath(glyph)
         ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
         ys_repair_Self_Insec(glyph, 1)
         glyph.round()
-        glyph.removeOverlap()
         glyph.addExtrema("all")
-        ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
-        ys_repair_Self_Insec(glyph, 1)
-        glyph.round()
         glyph.removeOverlap()
-        glyph.addExtrema("all")
+        ys_rm_isolatepath(glyph)
         ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
         ys_rm_small_poly(glyph, 25, 25)
         glyph.addExtrema("all")
         current_flags = glyph.validate(1) & 0x0FF
         if ((previous_flags & ~current_flags) == 0 or
-            (~previous_flags & current_flags) != 0):  # ƒtƒ‰ƒO‚ª~‚è‚Ä‚È‚¢‚©A‚Ş‚µ‚ë—§‚Á‚Ä‚é
+            (~previous_flags & current_flags) != 0):  # ãƒ•ãƒ©ã‚°ãŒé™ã‚Šã¦ãªã„ã‹ã€ã‚€ã—ã‚ç«‹ã£ã¦ã‚‹æ™‚
             print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair 2 mode'f'{mode}':<48}\r", end=" ", flush=True)
             previous_flags = glyph.validate(1) & 0x0FF
             glyph.foreground = fontforge.layer()
@@ -44,19 +44,21 @@ def ys_repair_si_chain(glyph, proc_cnt):
             ys_rm_spikecontours(glyph, 0.11, 0.001, 10)
             ys_repair_Self_Insec(glyph, 3)
             glyph.round()
-            glyph.removeOverlap()
             glyph.addExtrema("all")
+            glyph.removeOverlap()
+            ys_rm_isolatepath(glyph)
             ys_rm_spikecontours(glyph, 0.11, 0.001, 10)
             ys_repair_Self_Insec(glyph, 3)
             glyph.round()
-            glyph.removeOverlap()
             glyph.addExtrema("all")
+            glyph.removeOverlap()
+            ys_rm_isolatepath(glyph)
             ys_rm_spikecontours(glyph, 0.11, 0.001, 10)
             ys_rm_small_poly(glyph, 25, 25)
             glyph.addExtrema("all")
             current_flags = glyph.validate(1) & 0x0FF
             if ((previous_flags & ~current_flags) == 0 or
-                (~previous_flags & current_flags) != 0):  # ƒtƒ‰ƒO‚ª~‚è‚Ä‚È‚¢‚©A‚Ş‚µ‚ë—§‚Á‚Ä‚é
+                (~previous_flags & current_flags) != 0):  # ãƒ•ãƒ©ã‚°ãŒé™ã‚Šã¦ãªã„ã‹ã€ã‚€ã—ã‚ç«‹ã£ã¦ã‚‹æ™‚
                 print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair 3 mode'f'{mode}':<48}\r", end=" ", flush=True)
                 previous_flags = glyph.validate(1) & 0x0FF
                 glyph.foreground = fontforge.layer()
@@ -65,19 +67,21 @@ def ys_repair_si_chain(glyph, proc_cnt):
                 ys_rm_spikecontours(glyph, 0.12, 0.001, 10)
                 ys_repair_Self_Insec(glyph, 4)
                 glyph.round()
-                glyph.removeOverlap()
                 glyph.addExtrema("all")
+                glyph.removeOverlap()
+                ys_rm_isolatepath(glyph)
                 ys_rm_spikecontours(glyph, 0.12, 0.001, 10)
                 ys_repair_Self_Insec(glyph, 4)
                 glyph.round()
-                glyph.removeOverlap()
                 glyph.addExtrema("all")
+                glyph.removeOverlap()
+                ys_rm_isolatepath(glyph)
                 ys_rm_spikecontours(glyph, 0.12, 0.001, 10)
                 ys_rm_small_poly(glyph, 25, 25)
                 glyph.addExtrema("all")
                 current_flags = glyph.validate(1) & 0x0FF
                 if ((previous_flags & ~current_flags) == 0 or
-                    (~previous_flags & current_flags) != 0):  # ƒtƒ‰ƒO‚ª~‚è‚Ä‚È‚¢‚©A‚Ş‚µ‚ë—§‚Á‚Ä‚é
+                    (~previous_flags & current_flags) != 0):  # ãƒ•ãƒ©ã‚°ãŒé™ã‚Šã¦ãªã„ã‹ã€ã‚€ã—ã‚ç«‹ã£ã¦ã‚‹æ™‚
                     print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair 4 mode'f'{mode}':<48}\r", end=" ", flush=True)
                     previous_flags = glyph.validate(1) & 0x0FF
                     glyph.foreground = fontforge.layer()
@@ -86,19 +90,21 @@ def ys_repair_si_chain(glyph, proc_cnt):
                     ys_rm_spikecontours(glyph, 0.13, 0.001, 10)
                     ys_repair_Self_Insec(glyph, 5)
                     glyph.round()
-                    glyph.removeOverlap()
                     glyph.addExtrema("all")
+                    glyph.removeOverlap()
+                    ys_rm_isolatepath(glyph)
                     ys_rm_spikecontours(glyph, 0.13, 0.001, 10)
                     ys_repair_Self_Insec(glyph, 5)
                     glyph.round()
-                    glyph.removeOverlap()
                     glyph.addExtrema("all")
+                    glyph.removeOverlap()
+                    ys_rm_isolatepath(glyph)
                     ys_rm_spikecontours(glyph, 0.13, 0.001, 10)
                     ys_rm_small_poly(glyph, 25, 25)
                     glyph.addExtrema("all")
                     current_flags = glyph.validate(1) & 0x0FF
                     if ((previous_flags & ~current_flags) == 0 or
-                        (~previous_flags & current_flags) != 0):  # ƒtƒ‰ƒO‚ª~‚è‚Ä‚È‚¢‚©A‚Ş‚µ‚ë—§‚Á‚Ä‚é
+                        (~previous_flags & current_flags) != 0):  # ãƒ•ãƒ©ã‚°ãŒé™ã‚Šã¦ãªã„ã‹ã€ã‚€ã—ã‚ç«‹ã£ã¦ã‚‹æ™‚
                         print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair 5 mode'f'{mode}':<48}\r", end=" ", flush=True)
                         previous_flags = glyph.validate(1) & 0x0FF
                         glyph.foreground = fontforge.layer()
@@ -107,200 +113,241 @@ def ys_repair_si_chain(glyph, proc_cnt):
                         ys_rm_spikecontours(glyph, 0.14, 0.001, 10)
                         ys_repair_Self_Insec(glyph, 6)
                         glyph.round()
-                        glyph.removeOverlap()
                         glyph.addExtrema("all")
+                        glyph.removeOverlap()
+                        ys_rm_isolatepath(glyph)
                         ys_rm_spikecontours(glyph, 0.14, 0.001, 10)
                         ys_repair_Self_Insec(glyph, 6)
                         glyph.round()
-                        glyph.removeOverlap()
                         glyph.addExtrema("all")
+                        glyph.removeOverlap()
+                        ys_rm_isolatepath(glyph)
                         ys_rm_spikecontours(glyph, 0.14, 0.001, 10)
                         ys_rm_small_poly(glyph, 25, 25)
                         glyph.addExtrema("all")
                         current_flags = glyph.validate(1) & 0x0FF
                         if ((previous_flags & ~current_flags) == 0 or
-                            (~previous_flags & current_flags) != 0):  # ƒtƒ‰ƒO‚ª~‚è‚Ä‚È‚¢‚©A‚Ş‚µ‚ë—§‚Á‚Ä‚é
+                            (~previous_flags & current_flags) != 0):  # ãƒ•ãƒ©ã‚°ãŒé™ã‚Šã¦ãªã„ã‹ã€ã‚€ã—ã‚ç«‹ã£ã¦ã‚‹æ™‚
                             print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Repair failure, rollback.':<48}\r", end=" ", flush=True)
-                            glyph.foreground = fontforge.layer() # ƒtƒHƒAƒOƒ‰ƒEƒ“ƒh‚ğƒNƒŠƒA
-                            for contour in stroke_backup:  # •Û‘¶‚µ‚Ä‚¢‚½ƒpƒX‚Ì‘‚«–ß‚µ
-                                glyph.foreground += contour  # C•œs‘O‚É–ß‚·
+                            glyph.foreground = fontforge.layer() # ãƒ•ã‚©ã‚¢ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã‚’ã‚¯ãƒªã‚¢
+                            for contour in stroke_backup:  # ä¿å­˜ã—ã¦ã„ãŸãƒ‘ã‚¹ã®æ›¸ãæˆ»ã—
+                                glyph.foreground += contour  # ä¿®å¾©è©¦è¡Œå‰ã«æˆ»ã™
                             ys_rm_spikecontours(glyph, 0.15, 0.001, 10)
                             ys_repair_Self_Insec(glyph, 2)
                             glyph.round()
-                            glyph.removeOverlap()
                             glyph.addExtrema("all")
+                            glyph.removeOverlap()
+                            ys_rm_isolatepath(glyph)
                             ys_rm_spikecontours(glyph, 0.15, 0.001, 10)
                             ys_repair_Self_Insec(glyph, 2)
                             glyph.round()
-                            glyph.removeOverlap()
                             glyph.addExtrema("all")
+                            glyph.removeOverlap()
+                            ys_rm_isolatepath(glyph)
                             ys_rm_spikecontours(glyph, 0.15, 0.001, 10)
                             ys_rm_small_poly(glyph, 25, 25)
                             glyph.addExtrema("all")
-    # ˆÙí‚ª‚È‚¯‚ê‚Î‰½‚à‚¨‚«‚È‚¢ƒnƒY‚Ìˆ—B
+    # ç•°å¸¸ãŒãªã‘ã‚Œã°ä½•ã‚‚ãŠããªã„ãƒã‚ºã®å‡¦ç†ã€‚
     else:
         ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
         ys_repair_Self_Insec(glyph, 2)
         glyph.round()
-        glyph.removeOverlap()
         glyph.addExtrema("all")
+        glyph.removeOverlap()
+        ys_rm_isolatepath(glyph)
         ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
         ys_repair_Self_Insec(glyph, 2)
         glyph.round()
-        glyph.removeOverlap()
         glyph.addExtrema("all")
+        glyph.removeOverlap()
+        ys_rm_isolatepath(glyph)
         ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
         ys_rm_small_poly(glyph, 25, 25)
         glyph.addExtrema("all")
 
 
 
-# Šg‘åk¬‚É”º‚¤Œë·‚Å‚È‚¨‚¹‚È‚¢‚©söŒë‚µ‚Ä‚½ ‚Ì‚â‚Â
+# æ‹¡å¤§ç¸®å°ã«ä¼´ã†èª¤å·®ã§ãªãŠã›ãªã„ã‹è©¦è¡ŒéŒ¯èª¤ã—ã¦ãŸé ƒã®ã‚„ã¤
 def ys_rescale_chain(glyph):
     glyph_backup = [contour.dup() for contour in glyph.foreground]
 
     if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
         previous_flags = glyph.validate(1) & 0x0FF
+
         glyph.transform((0.2, 0, 0, 1, 0, 0))
-        glyph.round()  # ®”‰»
-        glyph.addExtrema("all") # ‹É“_‚ğ’Ç‰Á
-        glyph.removeOverlap()  # Œ‹‡
+        glyph.round()  # æ•´æ•°åŒ–
+        glyph.addExtrema("all") # æ¥µç‚¹ã‚’è¿½åŠ 
+        glyph.removeOverlap()  # çµåˆ
         glyph.transform((5, 0, 0, 0.2, 0, 0))
-        glyph.round()  # ®”‰»
-        glyph.addExtrema("all") # ‹É“_‚ğ’Ç‰Á
-        glyph.removeOverlap()  # Œ‹‡
+        glyph.round()
+        glyph.addExtrema("all")
+        glyph.removeOverlap()
         glyph.transform((0.2, 0, 0, 1, 0, 0))
-        glyph.round()  # ®”‰»
-        glyph.addExtrema("all") # ‹É“_‚ğ’Ç‰Á
-        glyph.removeOverlap()  # Œ‹‡
+        glyph.round()
+        glyph.addExtrema("all")
+        glyph.removeOverlap()
         glyph.transform((5, 0, 0, 5, 0, 0))
         ys_repair_Self_Insec(glyph, 2)
-        glyph.removeOverlap()  # Œ‹‡
+        glyph.addExtrema("all")
+        glyph.removeOverlap()
         ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
         ys_rm_isolatepath(glyph)
         ys_rm_small_poly(glyph, 25, 25)
         glyph.addExtrema("all")
+
         current_flags = glyph.validate(1) & 0x0FF
         if ((previous_flags & ~current_flags) == 0 or
             (~previous_flags & current_flags) != 0):
-            # ƒtƒ‰ƒO‚ª~‚è‚Ä‚È‚¢‚©A‚Ş‚µ‚ë—§‚Á‚Ä‚é‚ÍŸ‚Ìˆ«‘«‘~‚«
-            glyph.foreground = fontforge.layer() # ƒtƒHƒAƒOƒ‰ƒEƒ“ƒh‚ğƒNƒŠƒA
-            for contour in glyph_backup:  # •Û‘¶‚µ‚Ä‚¢‚½ƒpƒX‚Ì‘‚«–ß‚µ
-                glyph.foreground += contour  # C•œs‘O‚É–ß‚·
+            # ãƒ•ãƒ©ã‚°ãŒé™ã‚Šã¦ãªã„ã‹ã€ã‚€ã—ã‚ç«‹ã£ã¦ã‚‹æ™‚ã¯æ¬¡ã®æ‚ªè¶³æ»ã
+            glyph.foreground = fontforge.layer() # ãƒ•ã‚©ã‚¢ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã‚’ã‚¯ãƒªã‚¢
+            for contour in glyph_backup:  # ä¿å­˜ã—ã¦ã„ãŸãƒ‘ã‚¹ã®æ›¸ãæˆ»ã—
+                glyph.foreground += contour  # ä¿®å¾©è©¦è¡Œå‰ã«æˆ»ã™
             previous_flags = glyph.validate(1) & 0x0FF
-            glyph.transform((1, 0, 0, 12.5, 0, 0))
-            ys_simplify(glyph)  # ’Pƒ‰»s
-            ys_closepath(glyph)  # ŠJ‚¢‚½ƒpƒX‚ÌC³
-            glyph.round()  # ®”‰»
-            glyph.addExtrema("all") # ‹É“_‚ğ’Ç‰Á
-            glyph.removeOverlap()  # Œ‹‡
-            glyph.transform((12.5, 0, 0, 0.08, 0, 0))
-            ys_simplify(glyph)  # ’Pƒ‰»s
-            ys_closepath(glyph)  # ŠJ‚¢‚½ƒpƒX‚ÌC³
-            glyph.round()  # ®”‰»
-            glyph.addExtrema("all") # ‹É“_‚ğ’Ç‰Á
-            glyph.removeOverlap()  # Œ‹‡
-            glyph.transform((1, 0, 0, 12.5, 0, 0))
-            ys_closepath(glyph)  # ŠJ‚¢‚½ƒpƒX‚ÌC³
-            glyph.round()  # ®”‰»
-            glyph.addExtrema("all") # ‹É“_‚ğ’Ç‰Á
-            glyph.removeOverlap()  # Œ‹‡
-            glyph.transform((0.08, 0, 0, 0.08, 0, 0))
+
+            glyph.transform((1, 0, 0, 12.5, 0, 0))  # æ‹¡å¤§ç¸®å°
+            ys_simplify(glyph)  # å˜ç´”åŒ–è©¦è¡Œ
+            ys_closepath(glyph)  # é–‹ã„ãŸãƒ‘ã‚¹ã®ä¿®æ­£
+            ys_rm_spikecontours(glyph, 0.15, 0.001, 10)
             ys_repair_Self_Insec(glyph, 2)
-            glyph.removeOverlap()  # Œ‹‡
+            glyph.round()  # æ•´æ•°åŒ–
+            glyph.addExtrema("all") # æ¥µç‚¹ã‚’è¿½åŠ 
+            glyph.removeOverlap()  # çµåˆ
+            glyph.transform((12.5, 0, 0, 0.08, 0, 0))  # æ‹¡å¤§ç¸®å°
+            ys_simplify(glyph)
+            ys_closepath(glyph)
+            ys_rm_spikecontours(glyph, 0.15, 0.001, 10)
+            ys_repair_Self_Insec(glyph, 2)
+            glyph.round()
+            glyph.addExtrema("all")
+            glyph.removeOverlap()
+            glyph.transform((1, 0, 0, 12.5, 0, 0))  # æ‹¡å¤§ç¸®å°
+            ys_closepath(glyph)
+            ys_rm_spikecontours(glyph, 0.15, 0.001, 10)
+            ys_repair_Self_Insec(glyph, 2)
+            glyph.round()
+            glyph.addExtrema("all")
+            glyph.removeOverlap()
+            glyph.transform((0.08, 0, 0, 0.08, 0, 0))  # æ‹¡å¤§ç¸®å°
+            ys_closepath(glyph)
             ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+            ys_repair_Self_Insec(glyph, 2)
+            glyph.round()
+            glyph.addExtrema("all")
+            glyph.removeOverlap()
             ys_rm_isolatepath(glyph)
             ys_rm_small_poly(glyph, 25, 25)
             glyph.addExtrema("all")
+
             current_flags = glyph.validate(1) & 0x0FF
             if ((previous_flags & ~current_flags) == 0 or
                 (~previous_flags & current_flags) != 0):
-                # ƒtƒ‰ƒO‚ª~‚è‚Ä‚È‚¢‚©A‚Ş‚µ‚ë—§‚Á‚Ä‚é‚Í‚³‚ç‚ÉŸ‚Ìˆ«‘«‘~‚«
-                glyph.foreground = fontforge.layer() # ƒtƒHƒAƒOƒ‰ƒEƒ“ƒh‚ğƒNƒŠƒA
-                for contour in glyph_backup:  # •Û‘¶‚µ‚Ä‚¢‚½ƒpƒX‚Ì‘‚«–ß‚µ
-                    glyph.foreground += contour  # C•œs‘O‚É–ß‚·
+                # ãƒ•ãƒ©ã‚°ãŒé™ã‚Šã¦ãªã„ã‹ã€ã‚€ã—ã‚ç«‹ã£ã¦ã‚‹æ™‚ã¯ã•ã‚‰ã«æ¬¡ã®æ‚ªè¶³æ»ã
+                glyph.foreground = fontforge.layer() # ãƒ•ã‚©ã‚¢ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã‚’ã‚¯ãƒªã‚¢
+                for contour in glyph_backup:  # ä¿å­˜ã—ã¦ã„ãŸãƒ‘ã‚¹ã®æ›¸ãæˆ»ã—
+                    glyph.foreground += contour  # ä¿®å¾©è©¦è¡Œå‰ã«æˆ»ã™
                 previous_flags = glyph.validate(1) & 0x0FF
+
                 glyph.transform((0.25, 0, 0, 1, 0, 0))
-                glyph.round()  # ®”‰»
-                glyph.addExtrema("all") # ‹É“_‚ğ’Ç‰Á
-                glyph.removeOverlap()  # Œ‹‡
-                glyph.transform((4, 0, 0, 0.25, 0, 0))
-                glyph.round()  # ®”‰»
-                glyph.addExtrema("all") # ‹É“_‚ğ’Ç‰Á
-                glyph.removeOverlap()  # Œ‹‡
-                glyph.transform((0.25, 0, 0, 1, 0, 0))
-                glyph.round()  # ®”‰»
-                glyph.addExtrema("all") # ‹É“_‚ğ’Ç‰Á
-                glyph.removeOverlap()  # Œ‹‡
-                glyph.transform((4, 0, 0, 32, 0, 0))
-                ys_simplify(glyph)  # ’Pƒ‰»s
-                ys_closepath(glyph)  # ŠJ‚¢‚½ƒpƒX‚ÌC³
-                glyph.round()  # ®”‰»
-                glyph.addExtrema("all") # ‹É“_‚ğ’Ç‰Á
-                glyph.removeOverlap()  # Œ‹‡
-                glyph.transform((8, 0, 0, 1, 0, 0))
-                ys_simplify(glyph)  # ’Pƒ‰»s
-                ys_closepath(glyph)  # ŠJ‚¢‚½ƒpƒX‚ÌC³
-                glyph.round()  # ®”‰»
-                glyph.addExtrema("all") # ‹É“_‚ğ’Ç‰Á
-                glyph.removeOverlap()  # Œ‹‡
-                glyph.transform((1, 0, 0, 0.125, 0, 0))
-                ys_simplify(glyph)  # ’Pƒ‰»s
-                ys_closepath(glyph)  # ŠJ‚¢‚½ƒpƒX‚ÌC³
-                glyph.round()  # ®”‰»
-                glyph.addExtrema("all") # ‹É“_‚ğ’Ç‰Á
-                glyph.removeOverlap()  # Œ‹‡
-                glyph.transform((0.125, 0, 0, 1, 0, 0))
-                ys_repair_Self_Insec(glyph, 2)
-                glyph.removeOverlap()  # Œ‹‡
                 ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+                ys_repair_Self_Insec(glyph, 2)
+                glyph.round()
+                glyph.addExtrema("all")
+                glyph.removeOverlap()
+
+                glyph.transform((4, 0, 0, 0.25, 0, 0))
+                ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+                ys_repair_Self_Insec(glyph, 2)
+                glyph.round()
+                glyph.addExtrema("all")
+                glyph.removeOverlap()
+
+                glyph.transform((0.25, 0, 0, 1, 0, 0))
+                ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+                ys_repair_Self_Insec(glyph, 2)
+                glyph.round()
+                glyph.addExtrema("all")
+                glyph.removeOverlap()
+
+                glyph.transform((4, 0, 0, 32, 0, 0))
+                ys_simplify(glyph)
+                ys_closepath(glyph)
+                ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+                ys_repair_Self_Insec(glyph, 2)
+                glyph.round()
+                glyph.addExtrema("all")
+                glyph.removeOverlap()
+
+                glyph.transform((8, 0, 0, 1, 0, 0))
+                ys_simplify(glyph)
+                ys_closepath(glyph)
+                ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+                ys_repair_Self_Insec(glyph, 2)
+                glyph.round()
+                glyph.addExtrema("all")
+                glyph.removeOverlap()
+
+                glyph.transform((1, 0, 0, 0.125, 0, 0))
+                ys_simplify(glyph)
+                ys_closepath(glyph)
+                ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+                ys_repair_Self_Insec(glyph, 2)
+                glyph.round()
+                glyph.addExtrema("all")
+                glyph.removeOverlap()
+
+                glyph.transform((0.125, 0, 0, 1, 0, 0))
+                ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+                ys_repair_Self_Insec(glyph, 2)
+                glyph.addExtrema("all")
+                glyph.removeOverlap()
                 ys_rm_isolatepath(glyph)
                 ys_rm_small_poly(glyph, 25, 25)
                 glyph.addExtrema("all")
+
                 current_flags = glyph.validate(1) & 0x0FF
                 if ((previous_flags & ~current_flags) == 0 or
                     (~previous_flags & current_flags) != 0):
-                    # ƒtƒ‰ƒO‚ª~‚è‚Ä‚È‚¢‚©A‚Ş‚µ‚ë—§‚Á‚Ä‚é‚Í‚ ‚«‚ç‚ß‚é
-                    glyph.foreground = fontforge.layer() # ƒtƒHƒAƒOƒ‰ƒEƒ“ƒh‚ğƒNƒŠƒA
-                    for contour in glyph_backup:  # •Û‘¶‚µ‚Ä‚¢‚½ƒpƒX‚Ì‘‚«–ß‚µ
-                        glyph.foreground += contour  # C•œs‘O‚É–ß‚·
+                    # ãƒ•ãƒ©ã‚°ãŒé™ã‚Šã¦ãªã„ã‹ã€ã‚€ã—ã‚ç«‹ã£ã¦ã‚‹æ™‚ã¯ã‚ãã‚‰ã‚ã‚‹
+                    glyph.foreground = fontforge.layer() # ãƒ•ã‚©ã‚¢ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã‚’ã‚¯ãƒªã‚¢
+                    for contour in glyph_backup:  # ä¿å­˜ã—ã¦ã„ãŸãƒ‘ã‚¹ã®æ›¸ãæˆ»ã—
+                        glyph.foreground += contour  # ä¿®å¾©è©¦è¡Œå‰ã«æˆ»ã™
 
 
 
-# ’Pƒ‰»‚É‚æ‚é©ŒÈŒğ·‚Ìœ‹s
+# å˜ç´”åŒ–ã«ã‚ˆã‚‹è‡ªå·±äº¤å·®ã®é™¤å»è©¦è¡Œ
 def ys_simplify(glyph):
-    # ’Pƒ‰»‚Ìİ’èBignoreextrema ‚Æ setstarttoextremum ‚ğ—LŒø‰»
+    # å˜ç´”åŒ–ã®è¨­å®šã€‚ignoreextrema ã¨ setstarttoextremum ã‚’æœ‰åŠ¹åŒ–
     flags = ["ignoreextrema", "setstarttoextremum", "smoothcurves", "mergelines", "removesingletonpoints"]  
 
-    ys_rm_small_poly(glyph, 20, 20) # ‚²‚İ‘|œŠÖ”
-    # ©ŒÈŒğ·‚µ‚½ƒpƒX‚ğNGƒpƒX•Ï”‚Éƒuƒ`‚Ş(V‹K)
+    ys_rm_small_poly(glyph, 20, 20) # ã”ã¿æƒé™¤é–¢æ•°
+    # è‡ªå·±äº¤å·®ã—ãŸãƒ‘ã‚¹ã‚’NGãƒ‘ã‚¹å¤‰æ•°ã«ãƒ–ãƒè¾¼ã‚€(æ–°è¦)
     ng_paths = [contour.dup() for contour in glyph.foreground if contour.selfIntersects()]
-    # ©ŒÈŒğ·‚µ‚Ä‚È‚¢ƒpƒX(‚³‚Á‚«•Û‘¶‚Å‚«‚Ä‚È‚¢ƒRƒ“ƒ^[)‚ğOK•Ï”‚Éƒuƒ`‚Ş(V‹K)
+    # è‡ªå·±äº¤å·®ã—ã¦ãªã„ãƒ‘ã‚¹(ã•ã£ãä¿å­˜ã§ãã¦ãªã„ã‚³ãƒ³ã‚¿ãƒ¼)ã‚’OKå¤‰æ•°ã«ãƒ–ãƒè¾¼ã‚€(æ–°è¦)
     ok_paths = [contour.dup() for contour in glyph.foreground if contour not in ng_paths]
-    # ƒtƒHƒAƒOƒ‰ƒEƒ“ƒh‚ğƒNƒŠƒA‚µ‚ÄANGƒpƒX•Ï”‚É“ü‚ê‚Ä‚½ƒRƒ“ƒ^[‚ğ‘‚«–ß‚·
-    glyph.foreground = fontforge.layer() # ƒtƒHƒAƒOƒ‰ƒEƒ“ƒh‚ğƒNƒŠƒA
-    for contour in ng_paths:  # NGƒpƒX‚Ì‘‚«–ß‚µ
+    # ãƒ•ã‚©ã‚¢ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã‚’ã‚¯ãƒªã‚¢ã—ã¦ã€NGãƒ‘ã‚¹å¤‰æ•°ã«å…¥ã‚Œã¦ãŸã‚³ãƒ³ã‚¿ãƒ¼ã‚’æ›¸ãæˆ»ã™
+    glyph.foreground = fontforge.layer() # ãƒ•ã‚©ã‚¢ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã‚’ã‚¯ãƒªã‚¢
+    for contour in ng_paths:  # NGãƒ‘ã‚¹ã®æ›¸ãæˆ»ã—
         glyph.foreground += contour
         contour.addExtrema("all")
-    glyph.simplify(0.05, flags)  # ’Pƒ‰»‚Å¡‚ê‚Î‚¢‚¢‚È
-    ys_rm_small_poly(glyph, 25, 25) # ‚²‚İ‘|œŠÖ”
+    glyph.simplify(0.05, flags)  # å˜ç´”åŒ–ã§æ²»ã‚Œã°ã„ã„ãª
+    ys_rm_small_poly(glyph, 25, 25) # ã”ã¿æƒé™¤é–¢æ•°
     ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
     
-    for contour in glyph.foreground:# ‚±‚Ì‘€ì‚ÅŠJ‚¢‚½ƒpƒX‚ğ•Â‚¶‚é‘€ì
-        if not contour.closed:  # ŠJ‚¢‚½ƒpƒX‚©‚Ç‚¤‚©‚ğŠm”F
+    for contour in glyph.foreground:# ã“ã®æ“ä½œã§é–‹ã„ãŸãƒ‘ã‚¹ã‚’é–‰ã˜ã‚‹æ“ä½œ
+        if not contour.closed:  # é–‹ã„ãŸãƒ‘ã‚¹ã‹ã©ã†ã‹ã‚’ç¢ºèª
             contour.addExtrema("all")
-            contour.closed = True  # ‹­§“I‚É•Â‚¶‚é
+            contour.closed = True  # å¼·åˆ¶çš„ã«é–‰ã˜ã‚‹
 
-    # ©ŒÈŒğ·‚µ‚½ƒpƒX‚ğNGƒpƒX•Ï”‚Éƒuƒ`‚Ş(V‹K)
+    # è‡ªå·±äº¤å·®ã—ãŸãƒ‘ã‚¹ã‚’NGãƒ‘ã‚¹å¤‰æ•°ã«ãƒ–ãƒè¾¼ã‚€(æ–°è¦)
     ng_paths = [contour.dup() for contour in glyph.foreground if contour.selfIntersects()]
-    # ©ŒÈŒğ·‚µ‚Ä‚È‚¢ƒpƒX(‚³‚Á‚«•Û‘¶‚Å‚«‚Ä‚È‚¢ƒRƒ“ƒ^[)‚ğOK•Ï”‚Éƒuƒ`‚Ş(’Ç‹L)
+    # è‡ªå·±äº¤å·®ã—ã¦ãªã„ãƒ‘ã‚¹(ã•ã£ãä¿å­˜ã§ãã¦ãªã„ã‚³ãƒ³ã‚¿ãƒ¼)ã‚’OKå¤‰æ•°ã«ãƒ–ãƒè¾¼ã‚€(è¿½è¨˜)
     ok_paths += [contour.dup() for contour in glyph.foreground if contour not in ng_paths]
-    glyph.foreground = fontforge.layer() # ‚Ü‚¾c‚Á‚Ä‚éƒSƒ~‚Íƒ|ƒCB
-    for contour in ok_paths:  # OKƒpƒX‚ğ‘‚«–ß‚·
+    glyph.foreground = fontforge.layer() # ã¾ã æ®‹ã£ã¦ã‚‹ã‚´ãƒŸã¯ãƒã‚¤ã€‚
+    for contour in ok_paths:  # OKãƒ‘ã‚¹ã‚’æ›¸ãæˆ»ã™
         glyph.foreground += contour
         contour.addExtrema("all")
     
-    # ’Pƒ‰»‚ÌQlB
+    # å˜ç´”åŒ–ã®å‚è€ƒã€‚
     # [error_bound, flags, tan_bounds, linefixup, linelenmax]
     #"ignoreslopes",  # Allow slopes to change
     #"ignoreextrema",  # Allow removal of extrema

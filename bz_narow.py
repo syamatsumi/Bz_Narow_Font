@@ -143,7 +143,6 @@ def Local_snapshot_sfd (font, glyph, proc_cnt, del_file):
             for handler in logging.getLogger().handlers:
                 if hasattr(handler, 'flush'):
                     handler.flush()
-            gc.collect()  # ガベージコレクションの実行
     except IOError as e:
         print(f"保存か削除に失敗したかも？　多分削除に……： {del_file} \r", flush=True)
     return del_file
@@ -165,11 +164,6 @@ def force_width_norm(glyph, em_size, stroke_flag):
 
 # 加工後は何かしらの異常が発生するので修復を試みる
 def anomality_repair1(glyph, counter):
-    glyph.round()  # 整数化
-    glyph.removeOverlap()
-    if glyph.validate(1) & 0x01:  # 開いたパスがある場合
-        ys_closepath(glyph)
-    glyph.simplify(0.1) # 単純化
     if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
         previous_flags = glyph.validate(1) & 0x0FF
         ys_repair_si_chain(glyph, counter)
