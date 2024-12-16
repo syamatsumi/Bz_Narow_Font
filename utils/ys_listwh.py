@@ -641,20 +641,22 @@ def ys_whitelist(glyph, flag):
         "uni28455",  # 𨑕
         "uni2967F",  # 𩙿
     }
-    # ホワイトリストのコードポイント範囲
+
+    # リストのコードポイント範囲。
+    # 範囲は終点が無視されるため指定範囲は終点+1
     whitelist_ranges = [
-        range(0x21, 0x24EB),
-        range(0x2500, 0x25FE),
-        range(0x3001, 0x301F),
-        range(0x3033, 0x31FF),
-        range(0x4E00, 0x4E15),
-        range(0x4E28, 0x4E30),
-        range(0x4E36, 0x4E51),
-        range(0x4E85, 0x4E99),
-        range(0x4EBA, 0x4EC6),
-        range(0x516B, 0x5177),
-        range(0xFF00, 0xFF9F),
-        range(0xFFE0, 0xFFEC),
+        range(0x21, 0x24EB + 1),
+        range(0x2500, 0x25FE + 1),
+        range(0x3001, 0x301F + 1),
+        range(0x3033, 0x31FF + 1),
+        range(0x4E00, 0x4E15 + 1),
+        range(0x4E28, 0x4E30 + 1),
+        range(0x4E36, 0x4E51 + 1),
+        range(0x4E85, 0x4E99 + 1),
+        range(0x4EBA, 0x4EC6 + 1),
+        range(0x516B, 0x5177 + 1),
+        range(0xFF00, 0xFF9F + 1),
+        range(0xFFE0, 0xFFEC + 1),
     ]
 
     # コードポイントが範囲内かチェック

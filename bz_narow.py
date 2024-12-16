@@ -126,9 +126,9 @@ def save_and_open(font, filepath):
     return font
 
 # savefreq個処理してたら一旦保存。
-def Local_snapshot_sfd (font, glyph, proc_cnt, del_file):
+def Local_snapshot_sfd (font, glyph, proc_cnt, del_file, force=False):
     try:
-        if proc_cnt % PRESAVE_INTERVAL == 1:
+        if proc_cnt % PRESAVE_INTERVAL == 1 or force:
             print(f"作業前保存中のグリフ： {glyph.glyphname} \r", end=" ", flush=True)
             temp_file = f"{OUTPUT_NAME}_temp_{proc_cnt}.sfd"
             temp_file_path = os.path.join(BUILD_FONTS_DIR, temp_file)
@@ -164,7 +164,7 @@ def force_width_norm(glyph, em_size, stroke_flag):
 
 # 加工後は何かしらの異常が発生するので修復を試みる
 def anomality_repair1(glyph, counter):
-    if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
+    if (glyph.validate(1) & 0x0FF) != 0:
         previous_flags = glyph.validate(1) & 0x0FF
         ys_repair_si_chain(glyph, counter)
         current_flags = glyph.validate(1) & 0x0FF
@@ -188,7 +188,7 @@ def anomality_repair1(glyph, counter):
 
 # 変形、精度劣化を伴う修復試行を行う。
 def anomality_repair2(glyph):
-    if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
+    if (glyph.validate(1) & 0x0FF) != 0:
         previous_flags = glyph.validate(1) & 0x0FF
         ys_rescale_chain(glyph)
         current_flags = glyph.validate(1) & 0x0FF
@@ -229,9 +229,9 @@ def Local_validate_notice(glyph, note, loglevel):
         log_func(f"{note}のグリフ '{glyph.glyphname}' に開いたパス")
     if glyph.validate(1) & 0x02:  # 外側に時計回のパスがある
         logger.info(f"{note}のグリフ '{glyph.glyphname}' の外側に時計回りのパス")
-    # if glyph.validate(1) & 0x04:  # 交差がある
-    # logger.info(f"{note}のグリフ '{glyph.glyphname}' に交差がある")
-    # 交差は見つけてもどーにもできないので記録から外す……
+    #if glyph.validate(1) & 0x04:  # 交差がある
+    #    logger.info(f"{note}のグリフ '{glyph.glyphname}' に交差がある")
+    #  修復方法が全く分からない上に実害がある様子も無いので出力しない。
     if glyph.validate(1) & 0x08:  # 参照が不正
         logger.info(f"{note}のグリフ '{glyph.glyphname}' の参照が不正")
     if glyph.validate(1) & 0x10:  # ヒントが不正
@@ -247,10 +247,24 @@ def Local_validate_notice(glyph, note, loglevel):
 #                             メイン関数                             #
 ######################################################################
 def main():
-    font, del_file, temp_file, temp_file_path = setup()  # セットアップ
-    font = save_and_open(font, temp_file_path)  # SFDに変えて開き直し
-    font_weight = font.os2_weight  # フォントの元情報を把握
-    em_size = font.em  # ↓基本ストローク幅のセッティング
+    # セットアップ
+    font, del_file1, temp_file, temp_file_path = setup()
+
+    # フォントのプロパティを書き換える
+    write_property(ini_name, INPUT_FONTSTYLES, VSHRINK_RATIO, font)
+
+    # 2次スプラインの強制をやめて編集用に3次曲線の利用を許可する。
+    # 0全て3次、 1全て2次、2混在 のハズ？
+    font.is_quadratic = 0
+
+    # SFDに変えて開き直し
+    font = save_and_open(font, temp_file_path)
+
+    # フォントの元情報を把握
+    font_weight = font.os2_weight
+    em_size = font.em
+
+    # 基本ストローク幅のセッティング
     base_stroke_width = STROKE_WIDTH_MIN + STROKE_WIDTH_SF * (1 - VSHRINK_RATIO)
     if font_weight > 500:
         if base_stroke_width > 40:
@@ -263,11 +277,14 @@ def main():
         else:
             stroke_width = base_stroke_width
 
-    proc_cnt: int = 0  # カウンタをセット
-    # フォントのプロパティを書き換える
-    write_property(ini_name, INPUT_FONTSTYLES, VSHRINK_RATIO, font)
     # 全部モノスペースのフラグを管理。
     mono_all = INPUT_FONTSTYLES.startswith("M")
+
+    ######################################################################
+    #　　　　　　　　　　　　　ループ 1（加工）　　　　　　　　　　　　　#
+    ######################################################################
+    # カウンタをセット
+    proc_cnt: int = 0
 
     for glyph in font.glyphs():  # 全グリフをループ処理
         # 出力に値しない(カラのグリフ)は無視
@@ -284,9 +301,10 @@ def main():
             anomality_repair1(glyph, proc_cnt)
             continue
 
+        # 処理中グリフカウントのインクリメントと中途保存
         print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Start processing':<48}\r", end=" ", flush=True)
-        proc_cnt += 1  # 処理中グリフカウントのインクリメント
-        del_file = Local_snapshot_sfd(font, glyph, proc_cnt, del_file)  # 中途保存
+        proc_cnt += 1
+        del_file1 = Local_snapshot_sfd(font, glyph, proc_cnt, del_file1, False)
         
         if VSHRINK_RATIO >= 0.7:
             stroke_flag = True
@@ -306,7 +324,7 @@ def main():
 
         if mono_all:  # 強制モノスペース版は先に拡幅処理
             allmono_ratio, stroke_flag = force_width_norm(glyph, em_size, stroke_flag)
-            glyph.transform((allmono_ratio, 0, 0, 1, 0, 0))  # 幅統一用の拡幅処理
+            glyph.transform((allmono_ratio, 0, 0, 1, 0, 0),"partialRefs")  # 幅統一用の拡幅処理
             glyph.addExtrema("all")
 
         if stroke_flag:
@@ -321,28 +339,67 @@ def main():
             glyph.transform((1, 0, 0, 0.125, 0, 0))
             glyph.addExtrema("all")
 
-            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair':<48}\r", end=" ", flush=True)
-            anomality_repair1(glyph, proc_cnt)
-
-            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair Plus':<48}\r", end=" ", flush=True)
-            anomality_repair2(glyph)
-
             print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Overflow treatment':<48}\r", end=" ", flush=True)
             # ストロークで太ったアウトラインのを引き締めてオリジナルの幅に近付ける
             shapeup_outline(glyph, em_size, stroke_width)
 
         # 指定の縮小率に従って縦横比変更
-        glyph.transform((VSHRINK_RATIO, 0, 0, 1, 0, 0))
+        glyph.transform((VSHRINK_RATIO, 0, 0, 1, 0, 0), )
         glyph.addExtrema("all")
-
-        # 仕上げ処理
-        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Finish optimization':<48}\r", end=" ", flush=True)
+        
+        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair':<48}\r", end=" ", flush=True)
         anomality_repair1(glyph, proc_cnt)
+        anomality_repair2(glyph)
+        # 仕上げ処理後にもなお残る異常をチェック
+        Local_validate_notice(glyph, "Cubic仕上げ処理後", "warning")
 
-        # Local_validate_notice(glyph, "仕上げ処理後", "warning")  # 仕上げ後の検査(デバッグ用)
-        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Process Completed!':<48}\r", end=" ", flush=True)
+    # ループの最後に保存(周回関係無しに保存するフラグON)
+    del_file1 = Local_snapshot_sfd(font, glyph, proc_cnt, del_file1, True)
+
     ######################################################################
-    #                    各グリフのループ処理ここまで                    #
+    #　　　　　　　　　　　　　ループ 2（仕上げ）　　　　　　　　　　　　#
+    ######################################################################
+    # 2次スプラインの強制をしてTTF保存の準備をする
+    font.is_quadratic = 1
+
+    # カウンタをリセット
+    proc_cnt: int = 0
+
+    # SFDを開き直し
+    temp_file = f"{OUTPUT_NAME}_finish_{proc_cnt}.sfd"
+    temp_file_path = os.path.join(BUILD_FONTS_DIR, temp_file)
+    del_file2 = temp_file  # あとで消す時用
+    font = save_and_open(font, temp_file_path)
+
+    # 仕上げ
+    for glyph in font.glyphs():
+        # 出力に値しない(カラのグリフ)は無視
+        if not glyph.isWorthOutputting():
+            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Glyphs not worthy of output...':<48}\r", end=" ", flush=True)
+            continue
+
+        # 処理中グリフカウントのインクリメントと中途保存
+        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Finish Process':<48}\r", end=" ", flush=True)
+        proc_cnt += 1
+        del_file2 = Local_snapshot_sfd(font, glyph, proc_cnt, del_file2, False)
+
+        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair':<48}\r", end=" ", flush=True)
+        anomality_repair1(glyph, proc_cnt)
+        anomality_repair2(glyph)
+
+        # 交差以外のエラーが残っている場合に限りもう一周。
+        if (glyph.validate(1) & 0x0FF) != 0x04:
+            anomality_repair1(glyph, proc_cnt)
+            anomality_repair2(glyph)
+
+        # 仕上げ処理後にもなお残る異常をチェック
+        Local_validate_notice(glyph, "2次sp仕上げ処理後", "warning")
+
+    # ループの最後に保存(周回関係無しに保存するフラグON)
+    del_file2 = Local_snapshot_sfd(font, glyph, proc_cnt, del_file2, True)
+
+    ######################################################################
+    #　　　　　　　　　　　ループ 3（最終チェック）　　　　　　　　　　　#
     ######################################################################
     try:
         # SFDファイルの保存
@@ -382,11 +439,14 @@ def main():
         print(f"保存に失敗しました: {e}")
 
     else:
-        if del_file != f"temp_0_{OUTPUT_NAME}.sfd":
-            del_file_path = os.path.join(BUILD_FONTS_DIR, del_file)
-            print(f"前の一時ファイルを削除： {del_file_path} \r", end=" ", flush=True)
-            os.remove(del_file_path)
-    
+        del_file_path1 = os.path.join(BUILD_FONTS_DIR, del_file1)
+        os.remove(del_file_path1)
+        print(f"前の一時ファイルを削除： {del_file_path1} \r", end=" ", flush=True)
+
+        del_file_path2 = os.path.join(BUILD_FONTS_DIR, del_file2)
+        os.remove(del_file_path2)
+        print(f"前の一時ファイルを削除： {del_file_path2} \r", end=" ", flush=True)
+
     font.close()
 
 if __name__ == "__main__":

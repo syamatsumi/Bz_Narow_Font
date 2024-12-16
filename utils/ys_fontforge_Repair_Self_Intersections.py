@@ -4,169 +4,220 @@ import fontforge
 import math
 two_pi = 2 * math.pi
 
-# ‰sŠp‚Ìƒm[ƒh‚ğ‹Ï‚·ŠÖ”‚Å‚·B
-# ƒAƒCƒfƒAo‚µ‚¾‚¯‚â‚Á‚Ä‚ ‚Æ‚ÍChatGPT o1-preview‚É‘‚¢‚Ä–á‚Á‚½‚Ü‚ñ‚Ü‚ÅA
-# ³’¼‚È‚Æ‚±‚ëA‚¿‚á‚ñ‚Æ“®‚¢‚Ä‚é‚Ì‚©‚æ‚­‚í‚©‚ç‚ñ‚¿‚ñB
+# é‹­è§’ã®ãƒãƒ¼ãƒ‰ã‚’å‡ã™é–¢æ•°ã§ã™ã€‚
+# ã‚¢ã‚¤ãƒ‡ã‚¢å‡ºã—ã ã‘ã‚„ã£ã¦ã‚ã¨ã¯ChatGPT o1-previewã«æ›¸ã„ã¦è²°ã£ãŸã¾ã‚“ã¾ã§ã€
+# æ­£ç›´ãªã¨ã“ã‚ã€ã¡ã‚ƒã‚“ã¨å‹•ã„ã¦ã‚‹ã®ã‹ã‚ˆãã‚ã‹ã‚‰ã‚“ã¡ã‚“ã€‚
 
-# Œ©‚½–Ú‚É‚í‚©‚ç‚È‚¢‚Ù‚Ç¬‚³‚È©ŒÈŒğ·‚Í¦‚¢‰sŠp‚ğ‚Á‚Ä‚¢‚Ü‚·B
-# ‚’¼•ûŒü‚É‚Æ‚Ñ‚¾‚¹‚Îƒcƒm‚É‚È‚è‚Ü‚·‚µA
-# …•½•ûŒü‚É”ò‚Ño‚µ‚Ä‚¢‚Ä‚à‚â‚Í‚è”ò‚Ño‚µ‚Ä‹‚éƒ|ƒCƒ“ƒg‚Í‰sŠp‚È‚Ì‚Å‚·B
-# ‚»‚±‚ÅA–{ƒXƒNƒŠƒvƒg‚Å‚Í‰sŠp‚ğì‚Á‚Ä‚¢‚éƒ|ƒCƒ“ƒg‚ğˆê‰ÓŠ‚ÉŠñ‚¹W‚ß‚Ä‚µ‚Ü‚¢‚Ü‚·B
-# ‚ ‚Æ‚Íglyph.removeOverlap()‚Åd•¡‚µ‚½ƒ|ƒCƒ“ƒg‚ğíœ‚·‚ê‚Î‚¢‚¢‚Ì‚Å‚·‚ªA
-# ƒpƒX‚ÌŒü‚«‚ª‚¨‚©‚µ‚Èó‘Ô‚Åglyph.removeOverlap()‚ğ‚â‚é‚Æ
-# ‚»‚Ì‚Ü‚ÜƒOƒŠƒt‚ªƒƒ`ƒƒƒNƒ`ƒƒ‚É‚È‚Á‚¿‚á‚¤‚Ì‚ÅA
-# ‚ ‚¦‚Äglyph.removeOverlap()‚ğ‚©‚¯‚Ä‚¢‚Ü‚¹‚ñB
-# ”CˆÓ‚Ìƒ^ƒCƒ~ƒ“ƒO‚ÅÀ{‚·‚é‚æ‚¤‚É‚µ‚Ä‚­‚¾‚³‚¢B
-# ‚Å‚«‚ê‚Î‚±‚ê‚ğÀs‚µ‚½’¼Œã‚ª‚æ‚ë‚µ‚¢‚©‚Æv‚¢‚Ü‚·‚æBiLÍM j
+# è¦‹ãŸç›®ã«ã‚ã‹ã‚‰ãªã„ã»ã©å°ã•ãªè‡ªå·±äº¤å·®ã¯å‡„ã„é‹­è§’ã‚’æŒã£ã¦ã„ã¾ã™ã€‚
+# å‚ç›´æ–¹å‘ã«ã¨ã³ã ã›ã°ãƒ„ãƒã«ãªã‚Šã¾ã™ã—ã€
+# æ°´å¹³æ–¹å‘ã«é£›ã³å‡ºã—ã¦ã„ã¦ã‚‚ã‚„ã¯ã‚Šé£›ã³å‡ºã—ã¦å±…ã‚‹ãƒã‚¤ãƒ³ãƒˆã¯é‹­è§’ãªã®ã§ã™ã€‚
+# ãã“ã§ã€æœ¬ã‚¹ã‚¯ãƒªãƒ—ãƒˆã§ã¯é‹­è§’ã‚’ä½œã£ã¦ã„ã‚‹ãƒã‚¤ãƒ³ãƒˆã‚’ä¸€ç®‡æ‰€ã«å¯„ã›é›†ã‚ã¦ã—ã¾ã„ã¾ã™ã€‚
+# ã‚ã¨ã¯glyph.removeOverlap()ã§é‡è¤‡ã—ãŸãƒã‚¤ãƒ³ãƒˆã‚’å‰Šé™¤ã™ã‚Œã°ã„ã„ã®ã§ã™ãŒã€
+# ãƒ‘ã‚¹ã®å‘ããŒãŠã‹ã—ãªçŠ¶æ…‹ã§glyph.removeOverlap()ã‚’ã‚„ã‚‹ã¨
+# ãã®ã¾ã¾ã‚°ãƒªãƒ•ãŒãƒ¡ãƒãƒ£ã‚¯ãƒãƒ£ã«ãªã£ã¡ã‚ƒã†ã®ã§ã€
+# ã‚ãˆã¦glyph.removeOverlap()ã‚’ã‹ã‘ã¦ã„ã¾ã›ã‚“ã€‚
+# contour.merge()ã¯ã‹ã‘ã‚‹ã‚ˆã†ã«ã—ã¾ã—ãŸã€‚
+# ä»»æ„ã®ã‚¿ã‚¤ãƒŸãƒ³ã‚°ã§å®Ÿæ–½ã™ã‚‹ã‚ˆã†ã«ã—ã¦ãã ã•ã„ã€‚
+# ã§ãã‚Œã°ã“ã‚Œã‚’å®Ÿè¡Œã—ãŸç›´å¾ŒãŒã‚ˆã‚ã—ã„ã‹ã¨æ€ã„ã¾ã™ã‚ˆã€‚ï¼ˆÂ´âˆ€ï½€ ï¼‰
 
 
-
-def getpoint_oncurve(contour, idx, num_points):
-    # ‘OŒã‚Ìƒ|ƒCƒ“ƒg‚ğæ“¾iƒIƒtƒJ[ƒuƒ|ƒCƒ“ƒg‚ğƒXƒLƒbƒvj
+# å‰å¾Œã®ãƒã‚¤ãƒ³ãƒˆã‚’å–å¾—ï¼ˆã‚ªãƒ•ã‚«ãƒ¼ãƒ–ãƒã‚¤ãƒ³ãƒˆã‚’ã‚¹ã‚­ãƒƒãƒ—ï¼‰
+def ys_getpoint_oncurve(contour, idx, num_points):
     prev_idx = (idx - 1) % num_points
     while contour[prev_idx].type == 'offcurve':
         prev_idx = (prev_idx - 1) % num_points
         if prev_idx == idx:
-            break  # –³ŒÀƒ‹[ƒv–h~
+            break  # ç„¡é™ãƒ«ãƒ¼ãƒ—é˜²æ­¢
     next_idx = (idx + 1) % num_points
     while contour[next_idx].type == 'offcurve':
         next_idx = (next_idx + 1) % num_points
         if next_idx == idx:
-            break  # –³ŒÀƒ‹[ƒv–h~
+            break  # ç„¡é™ãƒ«ãƒ¼ãƒ—é˜²æ­¢
     prev_point = contour[prev_idx]
     next_point = contour[next_idx]
     return prev_point, next_point
 
-def fig_anglegap(ptA, ptB, ptC): # ƒxƒNƒgƒ‹‚ÆŠp“x‚ğo‚·B
-    # ƒxƒNƒgƒ‹‚ğŒvZ
+# ãƒ™ã‚¯ãƒˆãƒ«ã¨è§’åº¦ã‚’å‡ºã™ã€‚
+def ys_fig_anglegap(ptA, ptB, ptC):
+    # ãƒ™ã‚¯ãƒˆãƒ«ã‚’è¨ˆç®—
     vec1 = ( ptB.x - ptA.x, ptB.y - ptA.y,)
     vec2 = ( ptC.x - ptB.x, ptC.y - ptB.y,)
-    # Šp“x‚ğŒvZ
+    # è§’åº¦ã‚’è¨ˆç®—
     angle1 = math.atan2(vec1[1], vec1[0])
     angle2 = math.atan2(vec2[1], vec2[0])
-    # “ñ‚Â‚ÌƒxƒNƒgƒ‹‚ÌŠÔ‚ÌŠp“x·‚ğŒvZ
+    # äºŒã¤ã®ãƒ™ã‚¯ãƒˆãƒ«ã®é–“ã®è§’åº¦å·®ã‚’è¨ˆç®—
     angle_diff = (angle2 - angle1) % two_pi
-    # Šp“x·‚ª0‚©‚ç2ƒÎ‚Ì”ÍˆÍ‚É‚È‚é‚æ‚¤‚É’²®
+    # è§’åº¦å·®ãŒ0ã‹ã‚‰2Ï€ã®ç¯„å›²ã«ãªã‚‹ã‚ˆã†ã«èª¿æ•´
     if angle_diff < 0:
         angle_diff += two_pi
-    # Šp“x·‚ğ0‚©‚ç2ƒÎ‚Ì”ÍˆÍ‚É³‹K‰»
+    # è§’åº¦å·®ã‚’0ã‹ã‚‰2Ï€ã®ç¯„å›²ã«æ­£è¦åŒ–
     angle_gap = angle_diff % two_pi
     return angle_gap, vec1, vec2
 
+# å•é¡Œã®ã‚ã‚‹ãƒã‚¤ãƒ³ãƒˆã®é€£ç¶šã‚’æ¤œå‡º
+def ys_find_problem_clusters(contour, thresh_rad, i, idx, num_points):
+    # é–‹å§‹ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’ä¿å­˜
+    start_idx = idx
+
+    # å•é¡Œã‚»ã‚°ãƒ¡ãƒ³ãƒˆã®é–‹å§‹ä½ç½®ã‚’ä¿å­˜
+    initial_i = i
+
+    # å•é¡Œãƒã‚¤ãƒ³ãƒˆã®æ ¼ç´æ 
+    problem_points = []
+
+    while True:
+        problem_points.append(idx)
+        i += 1
+
+        # è¼ªéƒ­ã®çµ‚ç«¯ã«åˆ°é”ã—ãŸã‚‰çµ‚äº†
+        if i >= num_points:
+            break
+
+        idx = i % num_points
+        current_point = contour[idx]
+        if current_point.type == 'offcurve':
+            continue
+
+        prev_point, next_point = ys_getpoint_oncurve(contour, idx, num_points)
+        angle_diff, vector1, vector2 = ys_fig_anglegap(prev_point, current_point, next_point)
+
+        if thresh_rad < angle_diff < (two_pi - thresh_rad):
+            break
+
+    # çµ‚äº†ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’ä¿å­˜
+    end_idx = idx
+
+    # å•é¡Œã®ã‚ã‚‹å…¨ã¦ã®ãƒã‚¤ãƒ³ãƒˆï¼ˆã‚ªãƒ•ã‚«ãƒ¼ãƒ–ãƒã‚¤ãƒ³ãƒˆå«ã‚€ï¼‰ã‚’åé›†
+    if start_idx <= end_idx:
+        indices_range = range(start_idx, end_idx + 1)
+
+    # è¼ªéƒ­ãŒé–‰ã˜ã¦ã„ã‚‹å ´åˆ
+    else:
+        indices_range = (
+            list(range(start_idx, num_points)) + 
+            list(range(0, end_idx + 1))
+        )
+
+    problem_all_points = []
+    for j in indices_range:
+        problem_all_points.append(j)
+
+    # å§‹ç‚¹ã¨çµ‚ç‚¹ã®ãƒã‚¤ãƒ³ãƒˆã‚’å–å¾—
+    prev_idx = (initial_i - 1) % num_points
+    while contour[prev_idx].type == 'offcurve':
+        prev_idx = (prev_idx - 1) % num_points
+        if prev_idx == initial_i:
+            break  # ç„¡é™ãƒ«ãƒ¼ãƒ—é˜²æ­¢
+
+    # å•é¡Œã¨ãªã‚‹ç‚¹ã‚’ä¸€ç®‡æ‰€ã«å¯„ã›é›†ã‚ã‚‹ã€‚
+    start_point = contour[prev_idx]
+    end_point = contour[end_idx]
+    num_problems = len(problem_points)
+
+    # å¶æ•°å€‹ã®å ´åˆã€å•é¡Œç‚¹ã®å¹³å‡åº§æ¨™ã‚’è¨ˆç®—
+    if num_problems % 2 == 0:
+        total_x = sum(contour[p_idx].x for p_idx in problem_points)
+        total_y = sum(contour[p_idx].y for p_idx in problem_points)
+        total_points = num_problems  # å•é¡Œã‚ªãƒ³ã‚«ãƒ¼ãƒ–ãƒã‚¤ãƒ³ãƒˆæ•°
+        avg_x = total_x / total_points
+        avg_y = total_y / total_points
+
+        # å§‹ç‚¹ã¨çµ‚ç‚¹ã®åº§æ¨™ç¯„å›²ã‚’å–å¾—
+        min_x = min(start_point.x, end_point.x)
+        max_x = max(start_point.x, end_point.x)
+        min_y = min(start_point.y, end_point.y)
+        max_y = max(start_point.y, end_point.y)
+
+        # å¹³å‡åº§æ¨™ãŒç¯„å›²å†…ã«ã‚ã‚‹ã‹ã®ãƒã‚§ãƒƒã‚¯
+        x_in_range = min_x <= avg_x <= max_x
+        y_in_range = min_y <= avg_y <= max_y
+
+        # xè»¸ã¨yè»¸ã®ä¸¡æ–¹ã§ç¯„å›²å¤–ã®å ´åˆã€å§‹ç‚¹ã¨çµ‚ç‚¹ã®ä¸­é–“ç‚¹ã‚’ä½¿ç”¨
+        if not x_in_range and not y_in_range:
+            new_x = (start_point.x + end_point.x) / 2
+            new_y = (start_point.y + end_point.y) / 2
+
+        # ãã†ã§ãªã„å ´åˆã€å¹³å‡åº§æ¨™ã‚’ä½¿ç”¨
+        else:
+            new_x = avg_x
+            new_y = avg_y
+
+        # å§‹ç‚¹ã¨çµ‚ç‚¹ã«éš£æ¥ã™ã‚‹ã‚ªãƒ•ã‚«ãƒ¼ãƒ–ãƒã‚¤ãƒ³ãƒˆã‚’ç§»å‹•å¯¾è±¡ã‹ã‚‰é™¤å¤–
+        # å§‹ç‚¹ã«éš£æ¥ã™ã‚‹ã‚ªãƒ•ã‚«ãƒ¼ãƒ–ãƒã‚¤ãƒ³ãƒˆ
+        start_adjacent_idx = (start_idx + 1) % num_points
+        if (not contour[start_adjacent_idx].on_curve
+            and start_adjacent_idx in problem_all_points):
+            problem_all_points.remove(start_adjacent_idx)
+
+        # çµ‚ç‚¹ã«éš£æ¥ã™ã‚‹ã‚ªãƒ•ã‚«ãƒ¼ãƒ–ãƒã‚¤ãƒ³ãƒˆ
+        end_adjacent_idx = (end_idx - 1) % num_points
+        if (not contour[end_adjacent_idx].on_curve 
+            and end_adjacent_idx in problem_all_points):
+            problem_all_points.remove(end_adjacent_idx)
+
+    # å¥‡æ•°å€‹ã®å ´åˆã€å§‹ç‚¹ã¨çµ‚ç‚¹ã®ä¸­é–“ç‚¹ã‚’ä½¿ç”¨
+    else:
+        new_x = (start_point.x + end_point.x) / 2
+        new_y = (start_point.y + end_point.y) / 2
+
+    # å•é¡Œã®ã‚ã‚‹å…¨ã¦ã®ãƒã‚¤ãƒ³ãƒˆã‚’æ–°ã—ã„ä½ç½®ã«ç§»å‹•
+    for p_idx in problem_all_points:
+        contour[p_idx].x = new_x
+        contour[p_idx].y = new_y
+
+    return contour, i
 
 
+
+# ãƒ¡ã‚¤ãƒ³é–¢æ•°ã€‚
+def ys_rmSelfInsec(contour, thresh_rad):
+    # å…¨ã¦ã®ãƒã‚¤ãƒ³ãƒˆã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’å–å¾—
+    num_points = len(contour)
+    i = 0
+    while i < num_points:
+        idx = i
+        current_point = contour[idx]
+
+        # ãƒã‚¤ãƒ³ãƒˆã®å±æ€§'move', 'line', 'curve', 'qcurve', 'offcurve'ãªã©
+        point_type = current_point.type
+
+        # ã‚ªãƒ•ã‚«ãƒ¼ãƒ–ãƒã‚¤ãƒ³ãƒˆã¯å‡¦ç†ã—ãªã„
+        if point_type == 'offcurve':
+            i += 1; continue
+
+        # å‰å¾Œã®ãƒã‚¤ãƒ³ãƒˆã‚’å–å¾—ï¼ˆã‚ªãƒ•ã‚«ãƒ¼ãƒ–ãƒã‚¤ãƒ³ãƒˆã‚’ã‚¹ã‚­ãƒƒãƒ—ï¼‰
+        prev_point, next_point = ys_getpoint_oncurve(contour, idx, num_points)
+
+        # äºŒã¤ã®ãƒ™ã‚¯ãƒˆãƒ«ã®é–“ã®è§’åº¦å·®ã‚’è¨ˆç®—
+        angle_diff, vector1, vector2 = ys_fig_anglegap(prev_point, current_point, next_point)
+
+        # è§’åº¦ãŒé–¾å€¤æœªæº€ã¾ãŸã¯(2Ï€ - é–¾å€¤)ã‚’è¶…ãˆã‚‹å ´åˆã‚’è©•ä¾¡
+        if not thresh_rad < angle_diff < (two_pi - thresh_rad):
+            contour, i = ys_find_problem_clusters(contour, thresh_rad, i, idx, num_points)
+        # è§’åº¦ãŒé–¾å€¤ä»¥ä¸Š(åˆæ ¼)ã®ãŸã‚ã€ä½•ã‚‚ã›ãšã«æ¬¡ã®ãƒã‚¤ãƒ³ãƒˆã¸é€²ã‚€
+        else:
+            i += 1
+
+    # ãƒãƒ¼ã‚¸ã‚’ç”¨ã„ã¦ä¸Šã®å·¥ç¨‹ã§é›†åˆã•ã›ãŸç‚¹ã‚’æ•´ç†
+    contour.merge()
+
+    # æˆ»ã‚Šå€¤ã¯ã‚³ãƒ³ã‚¿ãƒ¼ã§ã€‚
+    return contour
+
+
+
+# ã‚°ãƒªãƒ•ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ã‚³ãƒ³ã‚¿ãƒ¼å˜ä½ã«ãƒãƒ©ã—ã¦å®Ÿè¡Œã€‚é€šå¸¸ã¯ã‚³ãƒ¬ã‚’å‘¼ã¹ã°OKã€‚
 def ys_repair_Self_Insec(glyph, angle_threshold=2):
-    angle_threshold_rad = math.radians(angle_threshold)
+    # è§’åº¦ã—ãã„å€¤ã‚’ãƒ©ã‚¸ã‚¢ãƒ³è§’ã«å¤‰æ›´
+    thresh_rad = math.radians(angle_threshold)
     for contour in glyph.foreground:
-        num_points = len(contour)
-
-        # ‘S‚Ä‚Ìƒ|ƒCƒ“ƒg‚ÌƒCƒ“ƒfƒbƒNƒX‚ğæ“¾
-        point_indices = list(range(num_points))
-        i = 0
-        while i < num_points:
-            idx = i
-            current_point = contour[idx]
-            # ƒ|ƒCƒ“ƒg‚Ì‘®«'move', 'line', 'curve', 'qcurve', 'offcurve'‚È‚Ç
-            point_type = current_point.type
-            # ƒIƒtƒJ[ƒuƒ|ƒCƒ“ƒg‚Íˆ—‚µ‚È‚¢
-            if point_type == 'offcurve':
-                i += 1; continue
-            # ‘OŒã‚Ìƒ|ƒCƒ“ƒg‚ğæ“¾iƒIƒtƒJ[ƒuƒ|ƒCƒ“ƒg‚ğƒXƒLƒbƒvj
-            prev_point, next_point = getpoint_oncurve(contour, idx, num_points)
-            # “ñ‚Â‚ÌƒxƒNƒgƒ‹‚ÌŠÔ‚ÌŠp“x·‚ğŒvZ
-            angle_diff, vector1, vector2 = fig_anglegap(prev_point, current_point, next_point)
-            # Šp“x‚ªè‡’l–¢–‚Ü‚½‚Í(2ƒÎ - è‡’l)‚ğ’´‚¦‚éê‡‚ğ•]‰¿
-            if not angle_threshold_rad < angle_diff < (two_pi - angle_threshold_rad):
-                # –â‘è‚Ì‚ ‚éƒ|ƒCƒ“ƒg‚Ì˜A‘±‚ğŒŸo
-                problem_points = []
-                start_idx = idx  # ŠJnƒCƒ“ƒfƒbƒNƒX‚ğ•Û‘¶
-                # –â‘è‚Ì‚ ‚éƒ|ƒCƒ“ƒg‚ğûW
-                initial_i = i  # –â‘èƒZƒOƒƒ“ƒg‚ÌŠJnˆÊ’u‚ğ•Û‘¶
-                while True:
-                    problem_points.append(idx)
-                    i += 1
-                    if i >= num_points:
-                        break  # —ÖŠs‚ÌI’[‚É“’B
-                    idx = i % num_points
-                    current_point = contour[idx]
-                    if current_point.type == 'offcurve':
-                        continue
-                    prev_point, next_point = getpoint_oncurve(contour, idx, num_points)
-                    angle_diff, vector1, vector2 = fig_anglegap(prev_point, current_point, next_point)
-                    if angle_threshold_rad < angle_diff < (two_pi - angle_threshold_rad):
-                        break
-                end_idx = idx
-
-                # –â‘è‚Ì‚ ‚é‘S‚Ä‚Ìƒ|ƒCƒ“ƒgiƒIƒtƒJ[ƒuƒ|ƒCƒ“ƒgŠÜ‚Şj‚ğûW
-                if start_idx <= end_idx:
-                    indices_range = range(start_idx, end_idx + 1)
-                else:  # —ÖŠs‚ª•Â‚¶‚Ä‚¢‚éê‡
-                    indices_range = list(range(start_idx, num_points)) + list(range(0, end_idx + 1))
-                problem_all_points = []
-                for j in indices_range:
-                    problem_all_points.append(j)
-
-                # n“_‚ÆI“_‚Ìƒ|ƒCƒ“ƒg‚ğæ“¾
-                prev_idx = (initial_i - 1) % num_points
-                while contour[prev_idx].type == 'offcurve':
-                    prev_idx = (prev_idx - 1) % num_points
-                    if prev_idx == initial_i:
-                        break  # –³ŒÀƒ‹[ƒv–h~
-                start_point = contour[prev_idx]
-                end_point = contour[end_idx]
-                num_problems = len(problem_points)
-
-                if num_problems % 2 == 0:
-                    # ‹ô”ŒÂ‚Ìê‡A–â‘è“_‚Ì•½‹ÏÀ•W‚ğŒvZ
-                    total_x = sum(contour[p_idx].x for p_idx in problem_points)
-                    total_y = sum(contour[p_idx].y for p_idx in problem_points)
-                    total_points = num_problems  # –â‘èƒIƒ“ƒJ[ƒuƒ|ƒCƒ“ƒg”
-                    avg_x = total_x / total_points
-                    avg_y = total_y / total_points
-
-                    # n“_‚ÆI“_‚ÌÀ•W”ÍˆÍ‚ğæ“¾
-                    min_x = min(start_point.x, end_point.x)
-                    max_x = max(start_point.x, end_point.x)
-                    min_y = min(start_point.y, end_point.y)
-                    max_y = max(start_point.y, end_point.y)
-
-                    # •½‹ÏÀ•W‚ª”ÍˆÍ“à‚É‚ ‚é‚©‚Ìƒ`ƒFƒbƒN
-                    x_in_range = min_x <= avg_x <= max_x
-                    y_in_range = min_y <= avg_y <= max_y
-
-                    if not x_in_range and not y_in_range:
-                        # x²‚Æy²‚Ì—¼•û‚Å”ÍˆÍŠO‚Ìê‡An“_‚ÆI“_‚Ì’†ŠÔ“_‚ğg—p
-                        new_x = (start_point.x + end_point.x) / 2
-                        new_y = (start_point.y + end_point.y) / 2
-                    else:
-                        # ‚»‚¤‚Å‚È‚¢ê‡A•½‹ÏÀ•W‚ğg—p
-                        new_x = avg_x
-                        new_y = avg_y
-
-                    # n“_‚ÆI“_‚É—×Ú‚·‚éƒIƒtƒJ[ƒuƒ|ƒCƒ“ƒg‚ğˆÚ“®‘ÎÛ‚©‚çœŠO
-                    # n“_‚É—×Ú‚·‚éƒIƒtƒJ[ƒuƒ|ƒCƒ“ƒg
-                    start_adjacent_idx = (start_idx + 1) % num_points
-                    if (not contour[start_adjacent_idx].on_curve 
-                                and start_adjacent_idx in problem_all_points):
-                        problem_all_points.remove(start_adjacent_idx)
-                    # I“_‚É—×Ú‚·‚éƒIƒtƒJ[ƒuƒ|ƒCƒ“ƒg
-                    end_adjacent_idx = (end_idx - 1) % num_points
-                    if (not contour[end_adjacent_idx].on_curve 
-                                and end_adjacent_idx in problem_all_points):
-                        problem_all_points.remove(end_adjacent_idx)
-                else:
-                    # Šï”ŒÂ‚Ìê‡An“_‚ÆI“_‚Ì’†ŠÔ“_‚ğg—p
-                    new_x = (start_point.x + end_point.x) / 2
-                    new_y = (start_point.y + end_point.y) / 2
-
-                # –â‘è‚Ì‚ ‚é‘S‚Ä‚Ìƒ|ƒCƒ“ƒg‚ğV‚µ‚¢ˆÊ’u‚ÉˆÚ“®
-                for p_idx in problem_all_points:
-                    contour[p_idx].x = new_x
-                    contour[p_idx].y = new_y
-            else:
-                i += 1  # Ÿ‚Ìƒ|ƒCƒ“ƒg‚Öi‚Ş
-
-
+        # 2æ¬¡ãƒ™ã‚¸ã‚¨ã®ã‚³ãƒ³ã‚¿ãƒ¼ã¯ä¸€åº¦3æ¬¡ã«å¤‰æ›ã—ã¦ã‹ã‚‰å‡¦ç†
+        if contour.is_quadratic:
+            contour.is_quadratic = False
+            contour = ys_rmSelfInsec(contour.dup(), thresh_rad)
+            contour.is_quadratic = True
+        else:
+            contour = ys_rmSelfInsec(contour.dup(), thresh_rad)
 
 if __name__ == "__main__":
-    ys_rmSelfInsec(glyph, 2)
+    ys_rmSelfInsec(contour, thresh_rad)

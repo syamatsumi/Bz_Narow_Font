@@ -343,6 +343,8 @@ def ys_dakutenlist(glyph):
         "uni3076.aalt",  # ぶ
         "uni3079.aalt",  # べ
         "uni307C.aalt",  # ぼ
+        "uni5FC4",  # 忄
+
     }
     # グリフ名がリストにあるかチェック
     if glyph.glyphname in dakutenlist_set:

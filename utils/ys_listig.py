@@ -200,6 +200,10 @@ def ys_ignorlist(glyph):
         "uniFF9D.vert",  # ﾝ
         "uniFF9E.vert",  # ﾞ
         "uniFF9F.vert",  # ﾟ
+        "glyph12231",
+        "glyph12235",
+        "glyph12239",
+        "glyph12243",
     }
 
     # グリフ名がリストにあるかチェック
