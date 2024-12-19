@@ -24,7 +24,7 @@ from .ys_fontforge_Remove_artifacts import ys_rm_small_poly
 # 自己交差の解消スクリプト。極端な角度を丸める効果を持つ。
 # 処理後はglyph.removeOverlap()で重複した点を消すこと。
 # rm_self_insec(glyph, angle_threshold=2)
-from .ys_fontforge_Repair_Self_Intersections import ys_repair_Self_Insec
+from .ys_fontforge_Repair_spikes import ys_repair_spikes
 
 
 

@@ -5,7 +5,7 @@ import psMat
 import math
 
 from .ys_fontforge_Remove_artifacts import ys_closepath, ys_rm_spikecontours, ys_rm_isolatepath, ys_rm_small_poly
-from .ys_fontforge_Repair_Self_Intersections import ys_repair_Self_Insec
+from .ys_fontforge_Repair_spikes import ys_repair_spikes
 from .ys_fontforge_tryfix import  ys_repair_si_chain, ys_rescale_chain, ys_simplify
 
 # 幅ストロークを加える
@@ -53,7 +53,7 @@ def ys_widestroke(glyph, stroke_width, storoke_height, vshrink_ratio, counter=1)
     # この作業はアーティファクトの除去が目的というより、
     # 後にアーティファクトが発生するのを予防するためのもの。
     ys_closepath(glyph)
-    ys_repair_Self_Insec(glyph, 1)
+    ys_repair_spikes(glyph, 1)
     glyph.round()
     glyph.addExtrema("all")
     glyph.removeOverlap()
@@ -64,7 +64,7 @@ def ys_widestroke(glyph, stroke_width, storoke_height, vshrink_ratio, counter=1)
     # 処理内容が似てるからって関数に分離しない方が良いかも。
     ys_closepath(glyph)
     ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
-    ys_repair_Self_Insec(glyph, 3)
+    ys_repair_spikes(glyph, 3)
     glyph.round()
     glyph.addExtrema("all")
     glyph.removeOverlap()
@@ -76,26 +76,26 @@ def ys_widestroke(glyph, stroke_width, storoke_height, vshrink_ratio, counter=1)
     # スパイク状の独立したコンターを削除する。
     # 変化が無くなるまで繰り返す。
     stroke_prev = [contour.dup() for contour in glyph.foreground]
-    ys_repair_Self_Insec(glyph, 3)
+    ys_repair_spikes(glyph, 3)
     ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
     stroke_aftr = [contour.dup() for contour in glyph.foreground]
     if stroke_prev != stroke_aftr:
         stroke_prev = [contour.dup() for contour in glyph.foreground]
-        ys_repair_Self_Insec(glyph, 3)
+        ys_repair_spikes(glyph, 3)
         ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
         stroke_aftr = [contour.dup() for contour in glyph.foreground]
         if stroke_prev != stroke_aftr:
             stroke_prev = [contour.dup() for contour in glyph.foreground]
-            ys_repair_Self_Insec(glyph, 3)
+            ys_repair_spikes(glyph, 3)
             ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
             stroke_aftr = [contour.dup() for contour in glyph.foreground]
             if stroke_prev != stroke_aftr:
                 stroke_prev = [contour.dup() for contour in glyph.foreground]
-                ys_repair_Self_Insec(glyph, 3)
+                ys_repair_spikes(glyph, 3)
                 ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
                 stroke_aftr = [contour.dup() for contour in glyph.foreground]
                 if stroke_prev != stroke_aftr:
-                    ys_repair_Self_Insec(glyph, 3)
+                    ys_repair_spikes(glyph, 3)
                     ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
 
     # 元のグリフと合成、保存していたパスの書き戻し

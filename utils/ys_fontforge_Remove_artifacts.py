@@ -80,8 +80,9 @@ def contour_length_and_points(contour):
 def ys_rm_spikecontours(glyph, c_thresh=0.1, g_thresh=0.001, p_thresh=10):
     ok_paths = []  # 有効なパスを保存するリスト
     # グリフ全体の面積を取得
-    g_bbox = glyph.boundingBox()  # bbox: (xMin, yMin, xMax, yMax)
-    gmax_area = (g_bbox[2] - g_bbox[0]) * (g_bbox[3] - g_bbox[1])
+    gbbox = glyph.boundingBox()
+    gxmin, gymin, gxmax, gymax = gbbox
+    gmax_area = (gxmax - gxmin) * (gymax - gymin)
 
     if glyph.validate(1) & 0x01:  # 空いたパスが存在する場合
         ys_closepath(glyph)  # 空いたパスを強制的に閉じる関数
@@ -98,13 +99,13 @@ def ys_rm_spikecontours(glyph, c_thresh=0.1, g_thresh=0.001, p_thresh=10):
         # BBOXの外周長を超える場合のみ、BBOXの面積と比較する。
         else:
             if points > p_thresh:  # 点の数が多い時
-                bbox = contour.boundingBox()
-                # [xmin, ymin, xmax, ymax] を返す想定で計算。
-                bbox_pe = 2 * ((bbox[2] - bbox[0]) + (bbox[3] - bbox[1]))
+                cbbox = contour.boundingBox()
+                cxmin, cymin, cxmax, cymax = cbbox
+                bbox_pe = 2 * ((cxmax - cxmin) + (cymax - cymin))
 
                 # BBOXの周長より長いときはBBOXの面積が比較対象
                 if length > bbox_pe:
-                    cmax_area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
+                    cmax_area = (cxmax - cxmin) * (cymax - cymin)
                 else:
                     cmax_area = (length/4)**2
             else:  # 上記のどちらの条件にも当てはまらない場合は外周長基準。
