@@ -10,24 +10,31 @@ from .ys_fontforge_tryfix import  ys_repair_si_chain, ys_rescale_chain, ys_simpl
 
 # 幅ストロークを加える
 def ys_widestroke(glyph, stroke_width, storoke_height, vshrink_ratio, counter=1):
-    #全てのストロークが反時計回りの場合フラグ立て
-    is_all_ccw = True
-    for contour in glyph.foreground:  # 各パス（輪郭）をループ
-        if contour.isClockwise():
-            is_all_ccw = False
-            break  # 1つでも時計回りなら確認を終了
-
-    # グリフのバックアップを取得
-    glyph_backup = [contour.dup() for contour in glyph.foreground]
-
     # 濁点グリフなら右の濁点をずらす。
     if ys_dakutenlist(glyph):
-        ys_dakuten_move(glyph, stroke_width / vshrink_ratio, -100)
+        move_width = stroke_width
+        ys_dakuten_move(glyph, move_width, -1000)
 
-    # 白抜きカッコは白抜きの大きさを確保し、削った分だけストローク幅を増やす。
-    if ys_cwhogolist(glyph):
+    # ストロークの方向性に関わる処理(兼バックアップ)
+    cw_paths = []
+    ccw_paths = []
+    for contour in glyph.foreground:
+        if contour.isClockwise():
+            cw_paths.append(contour.dup())
+        else:
+            is_all_cw = False
+            ccw_paths.append(contour.dup())
+    # 全部CWだった場合用フラグ
+    is_all_cw = ccw_paths == []
+
+    # 特定のグリフは反時計回りのコンターを削除する
+    if ys_ccwhogolist(glyph):
+        # 内側ストロークが無いぶんストローク幅を増やす
         stroke_width = stroke_width * 2
-        ys_cwhogo_expantion(glyph, stroke_width)
+        # レイヤを消去して時計回りのパスだけ書き戻す
+        glyph.foreground = fontforge.layer()
+        for contour in cw_paths:
+            glyph.foreground += contour
 
     glyph.stroke("calligraphic", stroke_width, storoke_height, 0, "round", "miterclip",
         # "circular", width[, CAP, JOIN, ANGLE, KEYWORD],
@@ -98,14 +105,20 @@ def ys_widestroke(glyph, stroke_width, storoke_height, vshrink_ratio, counter=1)
                     ys_repair_spikes(glyph, 3)
                     ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
 
-    # 元のグリフと合成、保存していたパスの書き戻し
-    for contour in glyph_backup:
+    # 元の時計回りパスの書き戻し
+    for contour in cw_paths:
         glyph.foreground += contour
-    # 元々通常パス(CCW)しか無いグリフの場合
-    if is_all_ccw:
+
+    # 元々通常パス(CW)しか無いグリフの場合
+    if is_all_cw:
         for contour in glyph.foreground:
-            if contour.isClockwise():  # 反転パス(CW)の場合
+            if not contour.isClockwise():  # 反転パス(CCW)の場合
                 contour.reverseDirection()  # パスを反転させる
+    else:
+        # 反時計回りパスの書き戻し
+        for contour in ccw_paths:
+            glyph.foreground += contour
+
     glyph.round()
     glyph.addExtrema("all")
     glyph.removeOverlap()  # 結合
@@ -147,7 +160,7 @@ def ys_anomality_repair(glyph, counter):
 # 空隙を増やした分だけ大きく太らせることになるので、
 # ここに入れて良い条件は結構限られる。
 # グリフを渡したら対象かどうか判定して返す。
-def ys_cwhogolist(glyph):
+def ys_ccwhogolist(glyph):
     cwhogolist_set = {
         "uni300E",  # 『
         "uni300F",  # 』
@@ -159,57 +172,13 @@ def ys_cwhogolist(glyph):
         "uni300F.vert",  # 』
         "uni300E.hwid",  # 『
         "uni300F.hwid",  # 』
+        "uniFE46",  # ﹆
     }
     # グリフ名がリストにあるかチェック
     if glyph.glyphname in cwhogolist_set:
         return True
     else:
         return False
-
-# 時計回りのコンターを、拡大幅で削られる分だけ
-# 各コンターの中心から拡大する。
-def ys_cwhogo_expantion(glyph, stroke_width):
-    for contour in glyph.foreground:
-        # 時計回りのコンターのみ処理
-        if contour.isClockwise():
-            # コンターの境界ボックスを取得
-            bbox = contour.boundingBox()
-            x_min, y_min, x_max, y_max = bbox
-            # コンターの幅を計算
-            width = x_max - x_min
-            # 拡大率を計算
-            if width == 0:
-                continue  # 幅が0の場合スキップ
-            scale_factor = (width + stroke_width) / width
-            # コンターの中心を計算
-            center_x = (x_min + x_max) / 2
-            center_y = (y_min + y_max) / 2
-            # コンターを原点に移動
-            contour.transform(psMat.translate(-center_x, -center_y))
-            # コンターを拡大
-            contour.transform(psMat.scale(scale_factor, scale_factor))
-            # 元の位置に戻す
-            contour.transform(psMat.translate(center_x, center_y))
-    return
-"""
-この辺の計算がワケ分からん。
-とりあえずは左側だけで考えて見る。
-幅2のストロークはパス内部に食われてしまうので、
-方向違いのパスで往復しても両側で2しか増えない。
-さらに上の関数のこの処理を加えると、
-あらかじめ1削られているので1しか増えない。
-じゃあその分を埋め合わせするために幅1.5にすると、
-今度は広げた幅以上に食ってしまう。
-
-ではストローク幅を4にする
-あらかじめ2削られるけどそのかわり4増えるから、
-最初の狙いどおり、元の太さに2を足した太さにできる。
-
-この辺の釣り合いの取り方はなんかの数式で表現出来るんだろうけど、
-今そういうトコまで頭まわらない。
-どうやら、ぼくの頭は算数で止まっていると思われる。
-まぁ、わけがわからなくても結果が得られるなら、という納得で茶を濁す。
-"""
 
 
 
@@ -301,7 +270,7 @@ def ys_dakutenlist(glyph):
         "uni309B.vert",  # ﾞ
         "uni309E.vert",  # ゞ
         "uni30FE.vert",  # ヾ
-        "quotedblright.hwid",  # 
+        "quotedblright.hwid",  #
         "uni30F4.aalt",  # ヴ
         "uni30AC.aalt",  # ｶﾞ
         "uni30AE.aalt",  # ｷﾞ
@@ -376,8 +345,15 @@ def ys_dakuten_move(glyph, move_width, threshold=-1000):
 
     # 特定した一番右のコンターのyminがしきい値以上である場合にのみ移動
     if rightmost_contour_index is not None and max_ymin >= threshold:
-        contour_to_move = glyph.foreground[rightmost_contour_index]
-        contour_to_move.transform(psMat.translate(move_width, 0))
+        proc_paths = []
+        for i, contour in enumerate(glyph.foreground):
+            if i == rightmost_contour_index:
+                contour.transform(psMat.translate(move_width, 0))
+            proc_paths.append(contour.dup())
+        # レイヤを消去して加工したパスを書き戻す
+        glyph.foreground = fontforge.layer()
+        for contour in proc_paths:
+            glyph.foreground += contour
     return
 
 if __name__ == "__main__":

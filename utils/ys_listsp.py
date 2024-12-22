@@ -2,16 +2,12 @@
 
 import fontforge
 
-def ys_whitelist(glyph, flag):
-    whitelist_set = {
+def ys_sparselist(glyph):
+    sparselist_set = {
         "uni4E00",  # 一
         "uni4E01",  # 丁
         "uni4E03",  # 七
         "uni4E09",  # 三
-        "uni4E0D",  # 不
-        "uni4E19",  # 丙
-        "uni4E2D",  # 中
-        "uni4E32",  # 串
         "uni4E36",  # 丶
         "uni4E59",  # 乙
         "uni4E5A",  # 乚
@@ -37,7 +33,6 @@ def ys_whitelist(glyph, flag):
         "uni5143",  # 元
         "uni5144",  # 兄
         "uni5145",  # 充
-        "uni5146",  # 兆
         "uni514B",  # 克
         "uni5165",  # 入
         "uni5168",  # 全
@@ -81,7 +76,6 @@ def ys_whitelist(glyph, flag):
         "uni531A",  # 匚
         "uni531E",  # 匞
         "uni5321",  # 匡
-        "uni5324",  # 匤
         "uni5338",  # 匸
         "uni5339",  # 匹
         "uni533A",  # 区
@@ -105,8 +99,6 @@ def ys_whitelist(glyph, flag):
         "uni53E3",  # 口
         "uni53F3",  # 右
         "uni5408",  # 合
-        "uni5426",  # 否
-        "uni56DB",  # 四
         "uni571F",  # 土
         "uni58EB",  # 士
         "uni58EC",  # 壬
@@ -117,15 +109,12 @@ def ys_whitelist(glyph, flag):
         "uni592E",  # 央
         "uni59BB",  # 妻
         "uni5B50",  # 子
-        "uni5C0F",  # 小
-        "uni5C11",  # 少
         "uni5DE5",  # 工
         "uni5DE6",  # 左
         "uni5DF1",  # 己
         "uni5DF3",  # 巳
         "uni5DFE",  # 巾
         "uni5E72",  # 干
-        "uni5E73",  # 平
         "uni5E74",  # 年
         "uni5E78",  # 幸
         "uni6238",  # 戸
@@ -141,7 +130,6 @@ def ys_whitelist(glyph, flag):
         "uni6C34",  # 水
         "uni706B",  # 火
         "uni738B",  # 王
-        "uni7532",  # 甲
         "uni76EE",  # 目
         "uni8DB3",  # 足
         "uniFB01",  # ﬁ
@@ -162,8 +150,6 @@ def ys_whitelist(glyph, flag):
         "uni5182",  # 冂
         "uni5183",  # 冃
         "uni5184",  # 冄
-        "uni5185",  # 内
-        "uni5186",  # 円
         "uni5187",  # 冇
         "uni5188",  # 冈
         "uni5196",  # 冖
@@ -177,39 +163,26 @@ def ys_whitelist(glyph, flag):
         "uni51AE",  # 冮
         "uni51B1",  # 冱
         "uni51B2",  # 冲
-        "uni51B3",  # 决
         "uni51B5",  # 况
-        "uni51B6",  # 冶
-        "uni51B7",  # 冷
         "uni51B8",  # 冸
-        "uni51BC",  # 冼
-        "uni51BE",  # 冾
         "uni5369",  # 卩
         "uni536A",  # 卪
         "uni536B",  # 卫
-        "uni536C",  # 卬
-        "uni536D",  # 卭
         "uni5382",  # 厂
         "uni5383",  # 厃
-        "uni5384",  # 厄
         "uni5385",  # 厅
-        "uni5386",  # 历
         "uni5387",  # 厇
         "uni5388",  # 厈
-        "uni5389",  # 厉
         "uni538B",  # 压
-        "uni538C",  # 厌
         "uni538F",  # 厏
         "uni53B6",  # 厶
         "uni53B7",  # 厷
-        "uni53B8",  # 厸
         "uni53B9",  # 厹
         "uni53BA",  # 厺
         "uni53BB",  # 去
         "uni53BC",  # 厼
         "uni53C8",  # 又
         "uni53C9",  # 叉
-        "uni53CA",  # 及
         "uni53CB",  # 友
         "uni53CD",  # 反
         "uni53E3",  # 口
@@ -225,33 +198,6 @@ def ys_whitelist(glyph, flag):
         "uni53F7",  # 号
         "uni53F8",  # 司
         "uni56D7",  # 囗
-        "uni56DA",  # 囚
-        "uni56DC",  # 囜
-        "uni56DD",  # 囝
-        "uni56DE",  # 回
-        "uni56DF",  # 囟
-        "uni56E0",  # 因
-        "uni56E1",  # 囡
-        "uni56E2",  # 团
-        "uni56E3",  # 団
-        "uni56E5",  # 囥
-        "uni56E6",  # 囦
-        "uni56E7",  # 囧
-        "uni56E8",  # 囨
-        "uni56E9",  # 囩
-        "uni56EA",  # 囪
-        "uni56EB",  # 囫
-        "uni56EC",  # 囬
-        "uni56ED",  # 园
-        "uni56EF",  # 囯
-        "uni56F0",  # 困
-        "uni56F8",  # 囸
-        "uni56F9",  # 囹
-        "uni56FA",  # 固
-        "uni56FB",  # 囻
-        "uni56FC",  # 囼
-        "uni56FD",  # 国
-        "uni5701",  # 圁
         "uni5721",  # 圡
         "uni5722",  # 圢
         "uni5723",  # 圣
@@ -263,11 +209,8 @@ def ys_whitelist(glyph, flag):
         "uni572D",  # 圭
         "uni572E",  # 圮
         "uni573C",  # 圼
-        "uni574A",  # 坊
-        "uni574B",  # 坋
         "uni58ED",  # 壭
         "uni58EE",  # 壮
-        "uni58F0",  # 声
         "uni58F1",  # 壱
         "uni58F2",  # 売
         "uni58F3",  # 壳
@@ -294,7 +237,6 @@ def ys_whitelist(glyph, flag):
         "uni5B53",  # 孓
         "uni5B57",  # 字
         "uni5948",  # 奈
-        "uni5949",  # 奉
         "uni5BF8",  # 寸
         "uni5BFA",  # 寺
         "uni5BFB",  # 寻
@@ -305,37 +247,15 @@ def ys_whitelist(glyph, flag):
         "uni5C38",  # 尸
         "uni5C39",  # 尹
         "uni5C3A",  # 尺
-        "uni5C6E",  # 屮
-        "uni5C71",  # 山
-        "uni5C72",  # 屲
-        "uni5C73",  # 屳
-        "uni5C74",  # 屴
-        "uni5C75",  # 屵
-        "uni5C76",  # 屶
-        "uni5C80",  # 岀
-        "uni5C81",  # 岁
-        "uni5C82",  # 岂
         "uni5DE8",  # 巨
         "uni5DF2",  # 已
-        "uni5DF4",  # 巴
-        "uni5DFF",  # 巿
-        "uni5E00",  # 帀
-        "uni5E01",  # 币
-        "uni5E02",  # 市
         "uni5E75",  # 幵
         "uni5E76",  # 并
         "uni5E77",  # 幷
-        "uni5E7A",  # 幺
         "uni5E7F",  # 广
         "uni5E80",  # 庀
         "uni5E81",  # 庁
-        "uni5E82",  # 庂
-        "uni5E83",  # 広
         "uni5E84",  # 庄
-        "uni5E85",  # 庅
-        "uni5E86",  # 庆
-        "uni5E8F",  # 序
-        "uni5E97",  # 店
         "uni5EF4",  # 廴
         "uni5EFE",  # 廾
         "uni5EFF",  # 廿
@@ -408,7 +328,6 @@ def ys_whitelist(glyph, flag):
         "uni672B",  # 末
         "uni672C",  # 本
         "uni672D",  # 札
-        "uni672E",  # 朮
         "uni672F",  # 术
         "uni6730",  # 朰
         "uni6731",  # 朱
@@ -416,134 +335,29 @@ def ys_whitelist(glyph, flag):
         "uni6B63",  # 正
         "uni6B79",  # 歹
         "uni6B7A",  # 歺
-        "uni6B7B",  # 死
         "uni6C0F",  # 氏
         "uni6C10",  # 氐
         "uni6C11",  # 民
-        "uni6C12",  # 氒
         "uni6C14",  # 气
         "uni6C15",  # 氕
         "uni6C17",  # 気
-        "uni6C34",  # 水
         "uni6C35",  # 氵
-        "uni6C36",  # 氶
-        "uni6C37",  # 氷
-        "uni6C38",  # 永
-        "uni6C3A",  # 氺
-        "uni6C3B",  # 氻
-        "uni6C3C",  # 氼
-        "uni6C3D",  # 氽
-        "uni6C3E",  # 氾
-        "uni6C3F",  # 氿
-        "uni6C40",  # 汀
-        "uni6C41",  # 汁
-        "uni6C42",  # 求
-        "uni6C43",  # 汃
-        "uni6C44",  # 汄
-        "uni6C45",  # 汅
-        "uni6C46",  # 汆
-        "uni6C47",  # 汇
-        "uni6C48",  # 汈
-        "uni6C49",  # 汉
-        "uni6C4F",  # 汏
-        "uni6C50",  # 汐
-        "uni6C51",  # 汑
-        "uni6C52",  # 汒
-        "uni6C53",  # 汓
-        "uni6C54",  # 汔
-        "uni6C56",  # 汖
-        "uni6C57",  # 汗
-        "uni6C58",  # 汘
-        "uni6C59",  # 汙
-        "uni6C5A",  # 汚
-        "uni6C5F",  # 江
-        "uni6C62",  # 汢
-        "uni6C63",  # 汣
-        "uni6C68",  # 汨
-        "uni6C69",  # 汩
-        "uni6C6A",  # 汪
-        "uni6C74",  # 汴
-        "uni6C75",  # 汵
-        "uni6C76",  # 汶
-        "uni706B",  # 火
-        "uni706D",  # 灭
-        "uni706E",  # 灮
-        "uni706F",  # 灯
-        "uni7070",  # 灰
-        "uni707E",  # 灾
-        "uni7074",  # 灴
-        "uni7075",  # 灵
-        "uni7076",  # 灶
-        "uni7077",  # 灷
-        "uni7078",  # 灸
-        "uni7079",  # 灹
-        "uni7236",  # 父
-        "uni7237",  # 爷
-        "uni723B",  # 爻
-        "uni723F",  # 爿
-        "uni7247",  # 片
-        "uni7259",  # 牙
-        "uni725B",  # 牛
-        "uni725C",  # 牜
-        "uni725F",  # 牟
-        "uni72AC",  # 犬
-        "uni72AD",  # 犭
-        "uni72AE",  # 犮
-        "uni72AF",  # 犯
-        "uni72B0",  # 犰
-        "uni7389",  # 玉
-        "uni738A",  # 玊
-        "uni738B",  # 王
-        "uni738C",  # 玌
-        "uni738D",  # 玍
-        "uni738E",  # 玎
-        "uni738F",  # 玏
-        "uni7390",  # 玐
-        "uni7391",  # 玑
-        "uni7392",  # 玒
-        "uni7393",  # 玓
-        "uni758B",  # 疋
-        "uni758C",  # 疌
-        "uni758D",  # 疍
         "uni7592",  # 疒
-        "uni7594",  # 疔
-        "uni7595",  # 疕
-        "uni7596",  # 疖
-        "uni7597",  # 疗
-        "uni7598",  # 疘
-        "uni7599",  # 疙
-        "uni759A",  # 疚
-        "uni759B",  # 疛
-        "uni759C",  # 疜
         "uni767D",  # 白
         "uni767E",  # 百
-        "uni767F",  # 癿
         "uni7680",  # 皀
         "uni7681",  # 皁
         "uni7682",  # 皂
         "uni7683",  # 皃
-        "uni7684",  # 的
         "uni7687",  # 皇
-        "uni77DB",  # 矛
         "uni77E2",  # 矢
         "uni77F3",  # 石
-        "uni77F4",  # 矴
-        "uni77F5",  # 矵
-        "uni77F6",  # 矶
-        "uni77F7",  # 矷
-        "uni77F8",  # 矸
-        "uni77F9",  # 矹
-        "uni77FA",  # 矺
-        "uni77FB",  # 矻
-        "uni77FC",  # 矼
-        "uni77FD",  # 矽
         "uni793A",  # 示
         "uni793B",  # 礻
         "uni793C",  # 礼
         "uni793E",  # 社
         "uni7A74",  # 穴
         "uni7ACB",  # 立
-        "uni7AD2",  # 竒
         "uni7AF9",  # 竹
         "uni7AFA",  # 竺
         "uni7C73",  # 米
@@ -591,29 +405,14 @@ def ys_whitelist(glyph, flag):
         "uni8EAB",  # 身
         "uni8FB6",  # 辶
         "uni8FB7",  # 辷
-        "uni8FB8",  # 辸
-        "uni8FB9",  # 边
-        "uni8FBA",  # 辺
         "uni8FBB",  # 辻
-        "uni8FBC",  # 込
         "uni8FBD",  # 辽
-        "uni8FBE",  # 达
         "uni8FC0",  # 迀
         "uni8FC1",  # 迁
         "uni8FC2",  # 迂
         "uni9577",  # 長
         "uni9578",  # 镸
         "uni9580",  # 門
-        "uni9581",  # 閁
-        "uni9582",  # 閂
-        "uni9583",  # 閃
-        "uni9585",  # 閅
-        "uni9586",  # 閆
-        "uni9587",  # 閇
-        "uni9588",  # 閈
-        "uni9589",  # 閉
-        "uni958F",  # 閏
-        "uni958B",  # 開
         "uni961C",  # 阜
         "uni961D",  # 阝
         "uni9752",  # 青
@@ -640,7 +439,7 @@ def ys_whitelist(glyph, flag):
         "uni2840C",  # 𨐌
         "uni28455",  # 𨑕
         "uni2967F",  # 𩙿
-        "uni300E",  # 『（特別処理が入るためホワイトリスト入り）
+        "uni300E",  # 『（特別処理が入るためリスト入り）
         "uni300F",  # 』
         "uni3016",  # 〖
         "uni3017",  # 〗
@@ -650,38 +449,72 @@ def ys_whitelist(glyph, flag):
         "uni300F.vert",  # 』
         "uni300E.hwid",  # 『
         "uni300F.hwid",  # 』
-    }
+        "uniFE46",  # ﹆
+        "uni0022",  # "
+        "uni00A8",  # ¨
+        "uni00AB",  # «
+        "uni00BB",  # »
+        "uni02DD",  # ˝
+        "uni0308",  # ̈
+        "uni030B",  # ̋
+        "uni030F",  # ̏
+        "uni201C",  # “
+        "uni201D",  # "
+        "uni201E",  # „
+        "uni2033",  # ″
+        "uni226A",  # ≪
+        "uni226B",  # ≫
+        "uni3003",  # 〃
+        "uni300A",  # 《
+        "uni300B",  # 》
+        "uni3034",  # 〴
+        "uni3099",  # ゙
+        "uni309B",  # ﾞ
+        "uni309E",  # ゞ
+        "uni30FE",  # ヾ
+        "uni30FC",  # ｰ
+        "uni30FD",  # ヽ
+        "uni30FE",  # ヾ
+        "uni30FF",  # ヿ
+        "uni3100",  # ㄀
+        "uni3101",  # ㄁
+        "uni3102",  # ㄂
+        "uni3103",  # ㄃
+        "uni3104",  # ㄄
+        "uniFF02",  # "
+        "uniFF9E",  # ﾞ
+        "uni301D.vert",  # 〝
+        "uni301F.vert",  # 〟
+        "uni309B.vert",  # ﾞ
+        "uni309E.vert",  # ゞ
+        "uni30FE.vert",  # ヾ
+        }
 
     # リストのコードポイント範囲。
     # 範囲は終点が無視されるため指定範囲は終点+1
-    whitelist_ranges = [
-        range(0x21, 0x24EB + 1),
-        range(0x2500, 0x25FE + 1),
-        range(0x3001, 0x301F + 1),
-        range(0x3033, 0x31FF + 1),
-        range(0x4E00, 0x4E15 + 1),
-        range(0x4E28, 0x4E30 + 1),
-        range(0x4E36, 0x4E51 + 1),
-        range(0x4E85, 0x4E99 + 1),
-        range(0x4EBA, 0x4EC6 + 1),
-        range(0x516B, 0x5177 + 1),
-        range(0xFF00, 0xFF9F + 1),
-        range(0xFFE0, 0xFFEC + 1),
+    sparselist_ranges = [
+        range(0x21, 0x39 + 1),
+        range(0x42, 0x4C + 1),
+        range(0x4E, 0x56 + 1),
+        range(0x58, 0x6C + 1),
+        range(0x6E, 0x76 + 1),
+        range(0x78, 0x7F + 1),
+        range(0x3000, 0x301F + 1),
+        range(0x3030, 0x30FF + 1),
+        range(0x31F0, 0x31FF + 1),
     ]
 
     # コードポイントが範囲内かチェック
     if glyph.unicode != -1:  # コードポイントを持つ場合のみチェック
-        for r in whitelist_ranges:
+        for r in sparselist_ranges:
             if glyph.unicode in r:
                 return True  # リストに該当する場合はTrueを返す
 
     # グリフ名がリストにあるかチェック
-    if glyph.glyphname in whitelist_set:
+    if glyph.glyphname in sparselist_set:
         return True
-
-    # 条件にマッチしなければフラグをそのまま返す
-    return flag
-
+    else:
+        return False
 
 if __name__ == "__main__":
     main()

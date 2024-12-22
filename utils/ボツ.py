@@ -319,3 +319,205 @@ def finish_optimise(glyph, counter):
     glyph.addExtrema("all")
 
 
+    # オフカーブポイントの処理
+    # オフカーブポイントだけがどえらく暴れるパターンが発見されたため追加
+    num_points = len(contour)
+    i = 0
+    while i < num_points:
+        idx = i
+        current_point = contour[idx]
+
+        # 循環を考慮して前後のインデックスと座標を取得
+        prev_idx = (idx - 1) % num_points
+        next_idx = (idx + 1) % num_points
+        prev_point = contour[prev_idx]
+        next_point = contour[next_idx]
+
+        # 二つのベクトルの間の角度差を計算
+        angle_diff, vector1, vector2 = ys_fig_anglegap(prev_point, current_point, next_point)
+
+        # 角度が閾値未満または(2π - 閾値)を超える場合を評価
+        if not thresh_rad < angle_diff < (two_pi - thresh_rad):
+            new_x = (prev_point.x + next_point.x) / 2
+            new_y = (prev_point.y + next_point.y) / 2
+            # 問題のあるポイントを新しい位置に移動
+            contour[idx].x = new_x
+            contour[idx].y = new_y
+        i += 1
+
+    # マージを用いて上の工程で集合させた点を整理
+    contour.merge()
+
+
+        # 始点と終点に隣接するオフカーブポイントを移動対象から除外
+        # 始点に隣接するオフカーブポイント
+        start_adjacent_idx = (start_idx + 1) % num_points
+        if (not contour[start_adjacent_idx].on_curve
+            and start_adjacent_idx in problem_all_points):
+            problem_all_points.remove(start_adjacent_idx)
+
+        # 終点に隣接するオフカーブポイント
+        end_adjacent_idx = (end_idx - 1) % num_points
+        if (not contour[end_adjacent_idx].on_curve 
+            and end_adjacent_idx in problem_all_points):
+            problem_all_points.remove(end_adjacent_idx)
+
+
+
+
+# 時計回りのコンターを、拡大幅で削られる分だけ
+# 各コンターの中心から拡大する。
+def ys_cwhogo_expantion(glyph, stroke_width):
+    proc_paths = []
+    for contour in glyph.foreground:
+        # 時計回りのコンターのみ処理
+        if not contour.isClockwise():
+            # コンターの境界ボックスを取得
+            bbox = contour.boundingBox()
+            x_min, y_min, x_max, y_max = bbox
+            # コンターの幅を計算
+            gwidth = x_max - x_min
+            # 拡大率を計算
+            if gwidth == 0:
+                continue  # 幅が0の場合スキップ
+            scale_factor = (gwidth + stroke_width *2) / gwidth
+            print(scale_factor)
+            # コンターの中心を計算
+            center_x = (x_min + x_max) / 2
+            # コンターを原点に移動
+            contour.transform(psMat.translate(-center_x, 0))
+            # コンターを拡大
+            contour.transform(psMat.scale(scale_factor, 1))
+            # 元の位置に戻す
+            contour.transform(psMat.translate(center_x, 0))
+        # どちら周りにしてもパスを保存
+        proc_paths.append(contour.dup())
+    # レイヤを消去して加工したパスを書き戻す
+    glyph.foreground = fontforge.layer()
+    for contour in proc_paths:
+        glyph.foreground += contour
+        glyph.background += contour
+
+    return
+
+"""
+この辺の計算がワケ分からん。
+とりあえずは左側だけで考えて見る。
+幅2のストロークはパス内部に食われてしまうので、
+方向違いのパスで往復しても両側で2しか増えない。
+さらに上の関数のこの処理を加えると、
+あらかじめ1削られているので1しか増えない。
+じゃあその分を埋め合わせするために幅1.5にすると、
+今度は広げた幅以上に食ってしまう。
+
+ではストローク幅を4にする
+あらかじめ2削られるけどそのかわり4増えるから、
+最初の狙いどおり、元の太さに2を足した太さにできる。
+
+この辺の釣り合いの取り方はなんかの数式で表現出来るんだろうけど、
+今そういうトコまで頭まわらない。
+どうやら、ぼくの頭は算数で止まっていると思われる。
+まぁ、わけがわからなくても結果が得られるなら、という納得で茶を濁す。
+"""
+
+
+
+    # オフカーブポイントの処理
+    # (オフカーブポイントだけが暴れてるときがあるため)
+    i = 0
+    while i < num_points:
+        idx = i
+        current_point = contour[idx]
+
+        # ここではオンカーブポイントを処理しない
+        if current_point.on_curve:
+            i += 1; continue
+
+        # 前後のポイントを取得（オフカーブポイントをスキップ）
+        prev_point, next_point = ys_getpoint_oncurve(contour, idx, num_points)
+
+        # 二つのベクトルの間の角度差を計算
+        angle_diff, vector1, vector2 = ys_fig_anglegap(prev_point, current_point, next_point)
+
+        # 始点と終点の座標範囲を取得
+        under_x = min(prev_point.x, next_point.x) - 200
+        upper_x = max(prev_point.x, next_point.x) + 200
+        under_y = min(prev_point.y, next_point.y) - 200
+        upper_y = max(prev_point.y, next_point.y) + 200
+
+        # この座標が範囲内にあるかのチェック
+        x_in_range = under_x <= current_point.x <= upper_x
+        y_in_range = under_y <= current_point.y <= upper_y
+
+        # 角度が閾値未満または(2π - 閾値)を超える場合は加工。
+        if (
+            angle_diff > 0.01 and
+            angle_diff < (two_pi - 0.01) and
+            not x_in_range and
+            not y_in_range
+            ):
+            # このオフカーブポイントは前後のポイントの中間に移動
+            new_x = (prev_point.x + next_point.x) / 2
+            new_y = (prev_point.y + next_point.y) / 2
+            current_point.x = new_x
+            current_point.y = new_y
+        i += 1
+
+
+
+
+# オンカーブポイントの条件式がおかしくて全部拾ってた頃の名残。
+# 本来の姿を取り戻したら強くなり過ぎてこんな処理してたらボロボロになる。
+    # スパイク状の独立したコンターを削除する。
+    # 変化が無くなるまで繰り返す。
+    stroke_prev = [contour.dup() for contour in glyph.foreground]
+    ys_repair_spikes(glyph, 3)
+    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+    stroke_aftr = [contour.dup() for contour in glyph.foreground]
+    if stroke_prev != stroke_aftr:
+        stroke_prev = [contour.dup() for contour in glyph.foreground]
+        ys_repair_spikes(glyph, 3)
+        ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+        stroke_aftr = [contour.dup() for contour in glyph.foreground]
+        if stroke_prev != stroke_aftr:
+            stroke_prev = [contour.dup() for contour in glyph.foreground]
+            ys_repair_spikes(glyph, 3)
+            ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+            stroke_aftr = [contour.dup() for contour in glyph.foreground]
+            if stroke_prev != stroke_aftr:
+                stroke_prev = [contour.dup() for contour in glyph.foreground]
+                ys_repair_spikes(glyph, 3)
+                ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+                stroke_aftr = [contour.dup() for contour in glyph.foreground]
+                if stroke_prev != stroke_aftr:
+                    ys_repair_spikes(glyph, 3)
+                    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+
+
+
+# 修復チェインの繰り返し実行。変化がなくなるか悪化するなら終了。
+def ys_anomality_repair(glyph, counter):
+    ys_repair_si_chain(glyph, counter)
+    if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
+        previous_flags = glyph.validate(1) & 0x0FF
+        ys_repair_si_chain(glyph, counter)
+        current_flags = glyph.validate(1) & 0x0FF
+        if (previous_flags & ~current_flags) != 0 and current_flags != 0:
+            previous_flags = glyph.validate(1) & 0x0FF
+            ys_repair_si_chain(glyph, counter)
+            current_flags = glyph.validate(1) & 0x0FF
+            if (previous_flags & ~current_flags) != 0 and current_flags != 0:
+                previous_flags = glyph.validate(1) & 0x0FF
+                ys_repair_si_chain(glyph, counter)
+                current_flags = glyph.validate(1) & 0x0FF
+                if (previous_flags & ~current_flags) != 0 and current_flags != 0:
+                    previous_flags = glyph.validate(1) & 0x0FF
+                    ys_repair_si_chain(glyph, counter)
+                    current_flags = glyph.validate(1) & 0x0FF
+                    if (previous_flags & ~current_flags) != 0 and current_flags != 0:
+                        ys_repair_si_chain(glyph, counter)
+    return
+
+
+
+

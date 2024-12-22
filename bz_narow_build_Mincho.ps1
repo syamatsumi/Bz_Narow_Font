@@ -55,7 +55,7 @@ $scriptfullname = "{0}.py" -f $scriptname
 $iniFile = "{0}.ini" -f $scriptname
 
 # 最大同時実行数
-$maxParallel = 7
+$maxParallel = 9
 
 # 実行中のプロセスを管理
 $runningJobs = @()

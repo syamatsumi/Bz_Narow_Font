@@ -13,19 +13,18 @@ from utils import ys_closepath, ys_repair_spikes, ys_rm_spikecontours
 from utils import ys_rm_isolatepath, ys_rm_small_poly
 from utils import ys_repair_si_chain, ys_rescale_chain, ys_simplify
 from utils import ys_widestroke
-from utils import ys_blacklist, ys_whitelist, ys_ignorlist, ys_sparselist
+from utils import ys_blacklist, ys_whitelist, ys_ignorlist
 from bz_narow_property import shorten_style_rd, write_property
 
 # コマンドライン引数の処理
 if len(sys.argv) < 4:
-    print("Usage: script.py <input_fontstyles> <output_name> <vshrink_ratio> <tgtgryphname>...", flush=True)
-    sys.exit(1)
+    print("Usage: script.py <input_fontstyles> <output_name> <vshrink_ratio> <tgtgryphname>", flush=True)
+    sys.exit(1)    
 try:
     INPUT_FONTSTYLES = sys.argv[1]  # 入力ファイル
     OUTPUT_NAME = sys.argv[2]  # 出力ファイル
     VSHRINK_RATIO = float(sys.argv[3])  # 横に縮める比率（数値に変換）
-    # 4番目以降の引数をリストとして格納
-    TGTGRYPHNAME = sys.argv[4:]  # 可変長のグリフ名リスト
+    TGTGRYPHNAME = sys.argv[4]  # テストしたいグリフ名
 except ValueError:
     print("Error: <stroke_width> and <VSHRINK_RATIO> must be numbers.", flush=True)
     sys.exit(1)
@@ -64,7 +63,7 @@ PROPOTIONAL_SIDEBEARING_DIVISOR  = float(settings.get("DEFAULT", "propotional_si
 logger = logging.getLogger()
 
 # 書き込みをロガーに転送するクラス。
-class StreamToLogger:
+class StreamToLogger:  
     def __init__(self, logger, log_level=logging.WARNING):
         self.logger = logger
         self.log_level = log_level
@@ -188,8 +187,6 @@ def wsize_fitting(glyph, obbox):
     oxmin, oymin, oxmax, oymax = obbox
     owidth = oxmax - oxmin
 
-    glyph_foretemp = glyph.foreground
-
     # 元々左からはみ出していた場合
     if oxmin < 0:
         # さらに元々右からもはみ出していた場合は元の幅基準で縮小幅を決める
@@ -201,9 +198,9 @@ def wsize_fitting(glyph, obbox):
         else:
             sh_ratio = 1
         # 左端に寄せて縮小かけて、元の左サイドベアリングに移動
-        glyph_foretemp.transform(psMat.translate(-cxmin, 0))
-        glyph_foretemp.transform(psMat.scale(sh_ratio, 1))
-        glyph_foretemp.transform(psMat.translate(oxmin, 0))
+        glyph.foreground.transform(psMat.translate(-cxmin, 0))
+        glyph.foreground.transform(psMat.scale(sh_ratio, 0))
+        glyph.foreground.transform(psMat.translate(oxmin, 0))
 
     # 元々右からはみ出していた場合
     elif oxmax > gwidth:
@@ -211,13 +208,13 @@ def wsize_fitting(glyph, obbox):
         if oxmax < cwidth:
             sh_ratio = oxmax / cwidth
             # 左端に寄せて縮小かけたら元のはみ出し幅のハズ。
-            glyph_foretemp.transform(psMat.translate(-cxmin, 0))
-            glyph_foretemp.transform(psMat.scale(sh_ratio, 1))
+            glyph.foreground.transform(psMat.translate(-cxmin, 0))
+            glyph.foreground.transform(psMat.scale(sh_ratio, 0))
         else:
             # 元のはみ出し幅に合わせる。元のomaxのが右にあるなら＋になって右に行く。
             # 現在のcmaxのが右にあったのなら-になって左に行くはず。
             x_shift = oxmax - cxmax
-            glyph_foretemp.transform(psMat.translate(x_shift, 0))
+            glyph.foreground.transform(psMat.translate(x_shift, 0))
 
     # 元々のはみ出しがなく現在左からはみ出している場合
     elif cxmin < 0:
@@ -225,31 +222,28 @@ def wsize_fitting(glyph, obbox):
         # 右端からも飛び出して居る場合も同じ条件と処理になるので判定省略
         if cwidth > gwidth:
             sh_ratio = gwidth / cwidth
-            glyph_foretemp.transform(psMat.translate(-cxmin, 0))
-            glyph_foretemp.transform(psMat.scale(sh_ratio, 1))
+            glyph.foreground.transform(psMat.translate(-cxmin, 0))
+            glyph.foreground.transform(psMat.scale(sh_ratio, 0))
         # 超えないなら左端に寄せるだけ
         else:
-            glyph_foretemp.transform(psMat.translate(-cxmin, 0))
+            glyph.foreground.transform(psMat.translate(-cxmin, 0))
 
     # 元々のはみ出しが無く現在右からはみ出している場合
     elif cxmax > gwidth:
         # 現在の幅がグリフ幅を超えるなら左端に寄せて縮小
         if cwidth > gwidth:
             sh_ratio = gwidth / cwidth
-            glyph_foretemp.transform(psMat.translate(-cxmin, 0))
-            glyph_foretemp.transform(psMat.scale(sh_ratio, 1))
+            glyph.foreground.transform(psMat.translate(-cxmin, 0))
+            glyph.foreground.transform(psMat.scale(sh_ratio, 0))
         # 超えないなら右端に寄せるだけ
         else:
             x_shift = gwidth - cxmax
-            glyph_foretemp.transform(psMat.translate(x_shift, 0))
-
-    glyph.foreground = fontforge.layer()
-    glyph.foreground = glyph_foretemp
+            glyph.foreground.transform(psMat.translate(x_shift, 0))
     return
 
 # 加工後は何かしらの異常が発生するので修復を試みる
 def anomality_repair1(glyph, counter):
-    if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
+    if (glyph.validate(1) & 0x0FF) != 0:
         previous_flags = glyph.validate(1) & 0x0FF
         ys_repair_si_chain(glyph, counter)
         current_flags = glyph.validate(1) & 0x0FF
@@ -320,10 +314,14 @@ def Local_validate_notice(glyph, note, loglevel):
 ######################################################################
 def main():
     # セットアップ
-    font, del_file, temp_file, temp_file_path = setup()
+    font, del_file1, temp_file, temp_file_path = setup()
 
     # フォントのプロパティを書き換える
     write_property(ini_name, INPUT_FONTSTYLES, VSHRINK_RATIO, font)
+
+    # 2次スプラインの強制をやめて編集用に3次曲線の利用を許可する。
+    # 0全て3次、 1全て2次、2混在 のハズ？
+    font.is_quadratic = 0
 
     # SFDに変えて開き直し
     font = save_and_open(font, temp_file_path)
@@ -332,22 +330,21 @@ def main():
     font_weight = font.os2_weight
     em_size = font.em
 
+    # 基本ストローク幅のセッティング
+    base_stroke_width = STROKE_WIDTH_MIN + STROKE_WIDTH_SF * (1 - VSHRINK_RATIO)
+    if font_weight > 500:
+        if base_stroke_width > 40:
+            stroke_width = 40
+        else:
+            stroke_width = base_stroke_width
+    else:
+        if base_stroke_width > 80:
+            stroke_width = 80
+        else:
+            stroke_width = base_stroke_width
+
     # 全部モノスペースのフラグを管理。
     mono_all = INPUT_FONTSTYLES.startswith("M")
-
-    # テスト用スクリプト。テストに不要なグリフを取り除く
-    if TGTGRYPHNAME:
-        print("testmode : Now delete the glyphs that are not to be tested.", flush=True)
-        # 先に参照解除処理を実行
-        for glyph in font.glyphs():
-            if glyph.glyphname in TGTGRYPHNAME:
-                glyph.unlinkRef()
-        # テスト対象外のグリフを事前にピックアップ
-        tst_delete_glyphs = [glyph for glyph in font.glyphs() if glyph.glyphname not in TGTGRYPHNAME]
-        # テスト対象外のグリフを削除
-        print("testmode : Delete untested glyphs.", flush=True)
-        for glyph in tst_delete_glyphs:
-            font.removeGlyph(glyph)
 
     ######################################################################
     #　　　　　　　　　　　　　ループ 1（加工）　　　　　　　　　　　　　#
@@ -356,38 +353,16 @@ def main():
     proc_cnt: int = 0
 
     for glyph in font.glyphs():  # 全グリフをループ処理
-        # 出力に値しない(カラのグリフ)は無視
-        if not glyph.isWorthOutputting():
-            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Glyphs not worthy of output...':<48}\r", end=" ", flush=True)
-            continue
-        # コンポジットグリフはなにもしないでスキップ
-        if len(glyph.references) > 0:
-            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Composite glyphs are ignored...':<48}\r", end=" ", flush=True)
-            continue
-        # 無視リストにあるグリフは修正試行と仕上げだけしてスキップ
-        if ys_ignorlist(glyph):
-            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Glyphs on ignore list...':<48}\r", end=" ", flush=True)
-            anomality_repair1(glyph, proc_cnt)
+        # テスト用コード
+        if not glyph.glyphname == f"{TGTGRYPHNAME}":
+            glyph.clear()
             continue
 
         # 処理中グリフカウントのインクリメントと中途保存
-        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Start processing':<48}\r", end=" ", flush=True)
-        proc_cnt += 1  # 処理中グリフカウントのインクリメント
-        del_file = Local_snapshot_sfd(font, glyph, proc_cnt, del_file)  # 中途保存
-
-        # 基本ストローク幅のセッティング
-        base_stroke_width = STROKE_WIDTH_MIN + STROKE_WIDTH_SF * (1 - VSHRINK_RATIO)
-        if font_weight > 500:
-            if base_stroke_width > 40:
-                stroke_width = 40
-            else:
-                stroke_width = base_stroke_width
-        else:
-            if base_stroke_width > 80:
-                stroke_width = 80
-            else:
-                stroke_width = base_stroke_width
-
+        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Loop1':<48}\r", end=" ", flush=True)
+        proc_cnt += 1
+        del_file1 = Local_snapshot_sfd(font, glyph, proc_cnt, del_file1, False)
+        
         if VSHRINK_RATIO >= 0.7:
             stroke_flag = True
         elif VSHRINK_RATIO < 0.7 and font_weight < 700:
@@ -399,14 +374,13 @@ def main():
                 # 拡幅対象はホワイトリストで拾う。
             stroke_flag = False
 
-        # ホワイトリスト登録グリフはストロークを許可
-        stroke_flag = ys_whitelist(glyph, stroke_flag)
+        # ホワイトリスト登録グリフはストロークを許可し、基本ストローク幅を本来の比率に戻す
+        if ys_whitelist(glyph, stroke_flag):
+            stroke_flag = True
+            stroke_width = base_stroke_width
+
         # ストロークを加えると破綻するグリフはブラックリストで除外処理。
         stroke_flag = ys_blacklist(glyph, stroke_flag)
-        # スパースリスト登録グリフはストロークの太さを強める
-        if ys_sparselist(glyph):
-            stroke_width = base_stroke_width
-            stroke_flag = True
 
         if mono_all:  # 強制モノスペース版は先に拡幅処理
             allmono_ratio, stroke_flag = force_width_norm(glyph, em_size, stroke_flag)
@@ -421,7 +395,6 @@ def main():
             glyph.transform(psMat.scale(1,8),"partialRefs")
             glyph.addExtrema("all")
 
-            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Wider stroke':<48}\r", end=" ", flush=True)
             # ストロークによる拡幅処理を実行する。
             ys_widestroke(glyph, stroke_width, STOROKE_HEIGHT, VSHRINK_RATIO, proc_cnt)
 
@@ -432,24 +405,61 @@ def main():
             # はみ出したグリフを元の状態を勘案して移動・縮小する
             wsize_fitting(glyph, obbox)
 
-            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair':<48}\r", end=" ", flush=True)
-            anomality_repair1(glyph, proc_cnt)
+        anomality_repair1(glyph, proc_cnt)
+        anomality_repair2(glyph)
+        # 仕上げ処理後にもなお残る異常をチェック
+        Local_validate_notice(glyph, "Cubic仕上げ処理後", "info")
 
-            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair Plus':<48}\r", end=" ", flush=True)
+    # ループの最後に保存(周回関係無しに保存するフラグON)
+    del_file1 = Local_snapshot_sfd(font, glyph, proc_cnt, del_file1, True)
+
+    ######################################################################
+    #　　　　　　　　　　　　　ループ 2（仕上げ）　　　　　　　　　　　　#
+    ######################################################################
+    # 2次スプラインの強制をしてTTF保存の準備をする
+    font.is_quadratic = 1
+
+    # カウンタをリセット
+    proc_cnt: int = 0
+
+    # SFDを開き直し
+    temp_file = f"{OUTPUT_NAME}_finish_{proc_cnt}.sfd"
+    temp_file_path = os.path.join(BUILD_FONTS_DIR, temp_file)
+    del_file2 = temp_file  # あとで消す時用
+    font = save_and_open(font, temp_file_path)
+
+    # 仕上げ
+    for glyph in font.glyphs():
+        # 出力に値しない(カラのグリフ)は無視
+        if not glyph.isWorthOutputting():
+            continue
+
+        # 処理中グリフカウントのインクリメントと中途保存
+        proc_cnt += 1
+        del_file2 = Local_snapshot_sfd(font, glyph, proc_cnt, del_file2, False)
+
+        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'      loop2':<48}\r", end=" ", flush=True)
+        # 仕上げで一度はやっておかないと何かしらの交差が生まれがちな模様。
+        glyph.foreground.simplify()
+
+        # 交差以外のエラーが残っている場合に限り実施する
+        if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
+            anomality_repair1(glyph, proc_cnt)
+        if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
             anomality_repair2(glyph)
 
         # 指定の縮小率に従って縦横比変更
         glyph.transform(psMat.scale(VSHRINK_RATIO, 1),"partialRefs")
         glyph.addExtrema("all")
 
-        # 仕上げ処理
-        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Finish optimization':<48}\r", end=" ", flush=True)
-        anomality_repair1(glyph, proc_cnt)
+        # 仕上げ処理後にもなお残る異常をチェック
+        Local_validate_notice(glyph, "2次sp仕上げ処理後", "info")
 
-        # Local_validate_notice(glyph, "仕上げ処理後", "warning")  # 仕上げ後の検査(デバッグ用)
-        print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Process Completed!':<48}\r", end=" ", flush=True)
+    # ループの最後に保存(周回関係無しに保存するフラグON)
+    del_file2 = Local_snapshot_sfd(font, glyph, proc_cnt, del_file2, True)
+
     ######################################################################
-    #                    各グリフのループ処理ここまで                    #
+    #　　　　　　　　　　　ループ 3（最終チェック）　　　　　　　　　　　#
     ######################################################################
     try:
         # SFDファイルの保存
@@ -457,7 +467,7 @@ def main():
         output_sfd_path = os.path.join(BUILD_FONTS_DIR, output_sfd)
         print(f"完成したフォントを保存： {output_sfd_path} \r", end=" ", flush=True)
         font.save(output_sfd_path)  # SFD形式で保存
-
+        
         # TTFファイルの保存
         output_ttf = f"{OUTPUT_NAME}.ttf"
         output_ttf_path = os.path.join(BUILD_FONTS_DIR, output_ttf)
@@ -478,25 +488,26 @@ def main():
             if not glyph.isWorthOutputting():
                 continue  # 出力しないグリフはスキップ
             if len(glyph.references) > 0:
-                print(f"合成グリフをスキップ： {glyph.glyphname} \r", end=" ", flush=True)
                 continue  # コンポジットグリフはスキップ
             if ys_ignorlist(glyph):
-                print(f"無視リスト対象のグリフをスキップ： {glyph.glyphname}\r", end=" ", flush=True)
                 continue
-
-            # 仕上げ処理
-            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Finish optimization':<48}\r", end=" ", flush=True)
-            anomality_repair1(glyph, proc_cnt)
+            # 交差以外のエラーが残っている場合に限り実施する
+            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'            Loop3':<48}\r", end=" ", flush=True)
+            if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
+                anomality_repair1(glyph, proc_cnt)
             Local_validate_notice(glyph, "最終チェック", "warning")
 
     except IOError as e:
         print(f"保存に失敗しました: {e}")
 
     else:
-        if del_file != f"temp_0_{OUTPUT_NAME}.sfd":
-            del_file_path = os.path.join(BUILD_FONTS_DIR, del_file)
-            print(f"前の一時ファイルを削除： {del_file_path} \r", end=" ", flush=True)
-            os.remove(del_file_path)
+        del_file_path1 = os.path.join(BUILD_FONTS_DIR, del_file1)
+        os.remove(del_file_path1)
+        print(f"前の一時ファイルを削除： {del_file_path1} \r", end=" ", flush=True)
+
+        del_file_path2 = os.path.join(BUILD_FONTS_DIR, del_file2)
+        os.remove(del_file_path2)
+        print(f"前の一時ファイルを削除： {del_file_path2} \r", end=" ", flush=True)
 
     font.close()
 

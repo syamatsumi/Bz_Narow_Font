@@ -1,6 +1,7 @@
 #!fontforge --lang=py -script
 
 import fontforge
+import psMat
 
 from .ys_fontforge_Remove_artifacts import ys_closepath, ys_rm_spikecontours, ys_rm_isolatepath, ys_rm_small_poly
 from .ys_fontforge_Repair_spikes import ys_repair_spikes
@@ -38,6 +39,7 @@ def ys_repair_si_chain(glyph, proc_cnt):
     if glyph.validate(1) & 0x01:  # 開いたパスを検出
         ys_closepath(glyph)  # パスを閉じる
     ys_rm_isolatepath(glyph)  # 孤立したゴミパスを削除
+    ys_repair_spikes(glyph, 1)  # removeoverlapを絡めない所でやっとく必要ある。
     glyph.round()  # 整数化
     # 処理戻し用のバックアップを取得
     forebackup = [contour.dup() for contour in glyph.foreground]
@@ -47,7 +49,7 @@ def ys_repair_si_chain(glyph, proc_cnt):
         previous_flags = glyph.validate(1) & 0x0FF
         for stronger in range(1, 6):  # 強度1から5を順番に試す
             print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair 'f'{stronger} mode'f'{mode}':<48}\r", end=" ", flush=True)
-            ys_repair_si(glyph, stronger, 0.1 + stronger * 0.01)  # 修復処理
+            ys_repair_si(glyph, stronger * 0.1, 0.1 + stronger * 0.01)  # 修復処理
             current_flags = glyph.validate(1) & 0x0FF
             if ((previous_flags & ~current_flags) != 0 and  # フラグが降りた上で
                 (~previous_flags & current_flags) == 0):  # 新たに立ったフラグがない
@@ -67,20 +69,20 @@ def ys_repair_si_chain(glyph, proc_cnt):
 
 # 拡大縮小の繰り返しで丸まらないかな？
 def ys_rescale(glyph, mag):
-    glyph.transform((mag, 0, 0, 1, 0, 0))
+    glyph.transform(psMat.scale(mag, 1))
     glyph.round()  # 整数化
     glyph.addExtrema("all") # 極点を追加
     glyph.removeOverlap()  # 結合
-    glyph.transform((1/mag, 0, 0, mag, 0, 0))
+    glyph.transform(psMat.scale(1/mag, mag))
     glyph.round()
     glyph.addExtrema("all")
     glyph.removeOverlap()
-    glyph.transform((mag, 0, 0, 1, 0, 0))
+    glyph.transform(psMat.scale(mag, 1))
     glyph.round()
     glyph.addExtrema("all")
     glyph.removeOverlap()
-    glyph.transform((1/mag, 0, 0, 1/mag, 0, 0))
-    ys_repair_spikes(glyph, 2)
+    glyph.transform(psMat.scale(1/mag, 1/mag))
+    ys_repair_spikes(glyph, 0.5)
     glyph.addExtrema("all")
     glyph.removeOverlap()
     ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
@@ -90,33 +92,33 @@ def ys_rescale(glyph, mag):
 
 # 拡大縮小と単純化で丸まらないかな？
 def ys_rescale_and_simplify(glyph, mag):
-    glyph.transform((1, 0, 0, mag, 0, 0))  # 拡大縮小
+    glyph.transform(psMat.scale(1, mag))
     ys_simplify(glyph)  # 単純化試行
     ys_closepath(glyph)  # 開いたパスの修正
     ys_rm_spikecontours(glyph, 0.15, 0.001, 10)
-    ys_repair_spikes(glyph, 2)
+    ys_repair_spikes(glyph, 0.5)
     glyph.round()  # 整数化
     glyph.addExtrema("all") # 極点を追加
     glyph.removeOverlap()  # 結合
-    glyph.transform((mag, 0, 0, 1/mag, 0, 0))  # 拡大縮小
+    glyph.transform(psMat.scale(mag, 1/mag))
     ys_simplify(glyph)
     ys_closepath(glyph)
     ys_rm_spikecontours(glyph, 0.15, 0.001, 10)
-    ys_repair_spikes(glyph, 2)
+    ys_repair_spikes(glyph, 0.5)
     glyph.round()
     glyph.addExtrema("all")
     glyph.removeOverlap()
-    glyph.transform((1, 0, 0, mag, 0, 0))  # 拡大縮小
+    glyph.transform(psMat.scale(1, mag))
     ys_closepath(glyph)
     ys_rm_spikecontours(glyph, 0.15, 0.001, 10)
-    ys_repair_spikes(glyph, 2)
+    ys_repair_spikes(glyph, 0.5)
     glyph.round()
     glyph.addExtrema("all")
     glyph.removeOverlap()
-    glyph.transform((1/mag, 0, 0, 1/mag, 0, 0))  # 拡大縮小
+    glyph.transform(psMat.scale(1/mag, 1/mag))
     ys_closepath(glyph)
     ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
-    ys_repair_spikes(glyph, 2)
+    ys_repair_spikes(glyph, 0.5)
     glyph.round()
     glyph.addExtrema("all")
     glyph.removeOverlap()
@@ -168,7 +170,7 @@ def ys_rescale_chain(glyph):
 # 単純化による自己交差の除去試行
 def ys_simplify(glyph):
     # 単純化の設定。ignoreextrema と setstarttoextremum を有効化
-    flags = ["ignoreextrema", "setstarttoextremum", "smoothcurves", "mergelines", "removesingletonpoints"]  
+    flags = ["ignoreextrema", "setstarttoextremum", "removesingletonpoints"]  
 
     ys_rm_small_poly(glyph, 20, 20) # ごみ掃除関数
     # 自己交差したパスをNGパス変数にブチ込む(新規)
@@ -180,10 +182,10 @@ def ys_simplify(glyph):
     for contour in ng_paths:  # NGパスの書き戻し
         glyph.foreground += contour
         contour.addExtrema("all")
-    glyph.simplify(0.05, flags)  # 単純化で治ればいいな
+    glyph.foreground.simplify(0.05, flags)  # 単純化で治ればいいな
     ys_rm_small_poly(glyph, 25, 25) # ごみ掃除関数
     ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
-    ys_repair_spikes(glyph, 2)
+    ys_repair_spikes(glyph, 0.5)
 
     if glyph.validate(1) & 0x01:  # 開いたパスを検出
         ys_closepath(glyph)  # パスを閉じる

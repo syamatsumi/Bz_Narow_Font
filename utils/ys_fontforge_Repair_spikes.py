@@ -16,109 +16,111 @@ two_pi = 2 * math.pi
 # パスの向きがおかしな状態でglyph.removeOverlap()をやると
 # そのままグリフがメチャクチャになっちゃうので、
 # あえてglyph.removeOverlap()をかけていません。
-# contour.merge()はかけるようにしました。
+# 3次ベジエで実行すると狂うので2次ベジエに変更して作業し、元に戻すようにした。
 # 任意のタイミングで実施するようにしてください。
 # できればこれを実行した直後がよろしいかと思いますよ。（´∀｀ ）
 
 
 # 前後のポイントを取得（オフカーブポイントをスキップ）
-def ys_getpoint_oncurve(contour, idx, num_points):
+def ys_getpoint_oncurve(contour, idx):
+    # 渡されたコンターの配列長さをチェック
+    num_points = len(contour)
+    # 手前のオンカーブポイントを取得
     prev_idx = (idx - 1) % num_points
-    while contour[prev_idx].type == 'offcurve':
+    while not contour[prev_idx].on_curve:
         prev_idx = (prev_idx - 1) % num_points
         if prev_idx == idx:
             break  # 無限ループ防止
     next_idx = (idx + 1) % num_points
-    while contour[next_idx].type == 'offcurve':
+    # 次のオンカーブポイントを取得
+    while not contour[next_idx].on_curve:
         next_idx = (next_idx + 1) % num_points
         if next_idx == idx:
             break  # 無限ループ防止
     prev_point = contour[prev_idx]
     next_point = contour[next_idx]
-    return prev_point, next_point
+    return prev_point, next_point, prev_idx, next_idx
 
 # ベクトルと角度を出す。
 def ys_fig_anglegap(ptA, ptB, ptC):
     # ベクトルを計算
     vec1 = ( ptB.x - ptA.x, ptB.y - ptA.y,)
-    vec2 = ( ptC.x - ptB.x, ptC.y - ptB.y,)
+    vec2 = ( ptB.x - ptC.x, ptB.y - ptC.y,)
+    vec3 = ( ptA.x - ptC.x, ptA.y - ptC.y,)
     # 角度を計算
     angle1 = math.atan2(vec1[1], vec1[0])
     angle2 = math.atan2(vec2[1], vec2[0])
     # 二つのベクトルの間の角度差を計算
-    angle_diff = (angle2 - angle1) % two_pi
-    # 角度差が0から2πの範囲になるように調整
-    if angle_diff < 0:
-        angle_diff += two_pi
-    # 角度差を0から2πの範囲に正規化
-    angle_gap = angle_diff % two_pi
-    return angle_gap, vec1, vec2
+    angle_gap = (angle2 - angle1)
+    return angle_gap, vec1, vec2, vec3
 
 # 問題のあるポイントの連続を検出
-def ys_find_problem_clusters(contour, thresh_rad, i, idx, num_points):
-    # 開始インデックスを保存
-    start_idx = idx
-
-    # 問題セグメントの開始位置を保存
-    initial_i = i
-
-    # 問題ポイントの格納枠
-    problem_points = []
+def ys_find_problem_clusters(contour, thresh_rad, input_idx):
+    # 渡されたコンターの配列長さをチェック
+    num_points = len(contour)
+    problem_pts_oncurve = 0  # オンカーブ点を数える
+    visited = set([input_idx])  # 訪問済みポイントを記録
+    idx = input_idx
+    end_idx = input_idx  # ループ前に初期化
 
     while True:
-        problem_points.append(idx)
-        i += 1
-
-        # 輪郭の終端に到達したら終了
-        if i >= num_points:
-            break
-
-        idx = i % num_points
+        # 確認中のポイント
         current_point = contour[idx]
-        if current_point.type == 'offcurve':
-            continue
+        prev_point, next_point, _, next_idx = ys_getpoint_oncurve(contour, idx)
+        angle_diff, _, _, _ = ys_fig_anglegap(prev_point, current_point, next_point)
 
-        prev_point, next_point = ys_getpoint_oncurve(contour, idx, num_points)
-        angle_diff, vector1, vector2 = ys_fig_anglegap(prev_point, current_point, next_point)
-
-        if thresh_rad < angle_diff < (two_pi - thresh_rad):
+        # 次のポイントが記録済みの場合はループ終了。
+        if next_idx in visited:
+            end_idx = idx
+            break
+        # 角度がNG判定のときはオンカーブ点を追記して次のループへ
+        elif -thresh_rad < angle_diff < thresh_rad:
+            problem_pts_oncurve += 1
+            end_idx = next_idx
+            idx = next_idx
+            visited.add(idx)
+        # 角度OK、再訪無しなら現在のポイントを終了範囲として戻り値に。
+        else:
+            end_idx = idx
             break
 
-    # 終了インデックスを保存
-    end_idx = idx
+    return end_idx, problem_pts_oncurve
 
-    # 問題のある全てのポイント（オフカーブポイント含む）を収集
-    if start_idx <= end_idx:
-        indices_range = range(start_idx, end_idx + 1)
 
-    # 輪郭が閉じている場合
-    else:
-        indices_range = (
-            list(range(start_idx, num_points)) + 
-            list(range(0, end_idx + 1))
-        )
+def ys_gather_and_shift_ng_points(contour, start_idx, end_idx, use_ng_points_for_average):
+    # 渡されたコンターの配列長さをチェック
+    num_points = len(contour)
 
-    problem_all_points = []
-    for j in indices_range:
-        problem_all_points.append(j)
-
-    # 始点と終点のポイントを取得
-    prev_idx = (initial_i - 1) % num_points
-    while contour[prev_idx].type == 'offcurve':
-        prev_idx = (prev_idx - 1) % num_points
-        if prev_idx == initial_i:
-            break  # 無限ループ防止
-
-    # 問題となる点を一箇所に寄せ集める。
-    start_point = contour[prev_idx]
+    # 問題点の直前直後の点
+    start_point = contour[start_idx]
     end_point = contour[end_idx]
-    num_problems = len(problem_points)
 
-    # 偶数個の場合、問題点の平均座標を計算
-    if num_problems % 2 == 0:
+    # 問題点のインデックスを収集
+    if start_idx <= end_idx:
+        # 始点の次から、レンジ終点まで(Pythonではレンジ終端は除外)
+        indices_range = range(start_idx + 1 , end_idx)
+    else:
+        # 輪郭が閉じててループ部を挟む場合
+        indices_range = (
+            list(range(start_idx +1, num_points)) +
+            list(range(0, end_idx))
+            )
+
+    # 実際の問題となる点をオンカーブのみと全部入りに別けて保存
+    problem_points = []
+    problem_all_points = []
+    for i in indices_range:
+        if contour[i].on_curve:
+            problem_points.append(i)
+            problem_all_points.append(i)
+        else:
+            problem_all_points.append(i)
+
+    # 問題点を含む平均座標を使う場合
+    if use_ng_points_for_average:
         total_x = sum(contour[p_idx].x for p_idx in problem_points)
         total_y = sum(contour[p_idx].y for p_idx in problem_points)
-        total_points = num_problems  # 問題オンカーブポイント数
+        total_points = len(problem_points)
         avg_x = total_x / total_points
         avg_y = total_y / total_points
 
@@ -133,7 +135,7 @@ def ys_find_problem_clusters(contour, thresh_rad, i, idx, num_points):
         y_in_range = min_y <= avg_y <= max_y
 
         # x軸とy軸の両方で範囲外の場合、始点と終点の中間点を使用
-        if not x_in_range and not y_in_range:
+        if not all([x_in_range, y_in_range]):
             new_x = (start_point.x + end_point.x) / 2
             new_y = (start_point.y + end_point.y) / 2
 
@@ -142,20 +144,7 @@ def ys_find_problem_clusters(contour, thresh_rad, i, idx, num_points):
             new_x = avg_x
             new_y = avg_y
 
-        # 始点と終点に隣接するオフカーブポイントを移動対象から除外
-        # 始点に隣接するオフカーブポイント
-        start_adjacent_idx = (start_idx + 1) % num_points
-        if (not contour[start_adjacent_idx].on_curve
-            and start_adjacent_idx in problem_all_points):
-            problem_all_points.remove(start_adjacent_idx)
-
-        # 終点に隣接するオフカーブポイント
-        end_adjacent_idx = (end_idx - 1) % num_points
-        if (not contour[end_adjacent_idx].on_curve 
-            and end_adjacent_idx in problem_all_points):
-            problem_all_points.remove(end_adjacent_idx)
-
-    # 奇数個の場合、始点と終点の中間点を使用
+    # 奇数個とかオフカーブポイントだけが移動対象の場合、始点と終点の中間点を使用
     else:
         new_x = (start_point.x + end_point.x) / 2
         new_y = (start_point.y + end_point.y) / 2
@@ -165,59 +154,86 @@ def ys_find_problem_clusters(contour, thresh_rad, i, idx, num_points):
         contour[p_idx].x = new_x
         contour[p_idx].y = new_y
 
-    return contour, i
+    return contour
 
 
 
-# メイン関数。
+# コンター間のループ
 def ys_rmSpike(contour, thresh_rad):
     # 全てのポイントのインデックスを取得
     num_points = len(contour)
-    i = 0
-    while i < num_points:
+    for i in range(num_points):
         idx = i
         current_point = contour[idx]
 
-        # ポイントの属性'move', 'line', 'curve', 'qcurve', 'offcurve'など
-        point_type = current_point.type
-
-        # オフカーブポイントは処理しない
-        if point_type == 'offcurve':
-            i += 1; continue
-
-        # 前後のポイントを取得（オフカーブポイントをスキップ）
-        prev_point, next_point = ys_getpoint_oncurve(contour, idx, num_points)
+        # 前後のオンカーブポイントを取得
+        prev_point, next_point, prev_idx, next_idx = ys_getpoint_oncurve(contour, idx)
 
         # 二つのベクトルの間の角度差を計算
-        angle_diff, vector1, vector2 = ys_fig_anglegap(prev_point, current_point, next_point)
+        angle_diff, vec_cp, vec_cn, vec_pn = ys_fig_anglegap(prev_point, current_point, next_point)
 
-        # 角度が閾値未満または(2π - 閾値)を超える場合を評価
-        if not thresh_rad < angle_diff < (two_pi - thresh_rad):
-            contour, i = ys_find_problem_clusters(contour, thresh_rad, i, idx, num_points)
-        # 角度が閾値以上(合格)のため、何もせずに次のポイントへ進む
-        else:
-            i += 1
+        # 角度が閾値の範囲内であるなら対処
+        if -thresh_rad < angle_diff < thresh_rad:
+            # オンカーブポイントなら連続点の判定に進む
+            if current_point.on_curve:
+                start_idx = prev_idx
+                end_idx, problem_pts_oncurve = ys_find_problem_clusters(contour, thresh_rad, prev_idx)
 
-    # マージを用いて上の工程で集合させた点を整理
-    contour.merge()
+                # 上のループ処理でトチった時用の保険……
+                if end_idx == start_idx:
+                    end_idx = next_idx
+                    problem_pts_oncurve = 1
 
-    # 戻り値はコンターで。
+                # オンカーブポイントが偶数ならNGポイント座標の平均へ移動のフラグを立てる
+                if problem_pts_oncurve % 2 == 0:
+                    use_ng_points_for_average = True
+                else:
+                    use_ng_points_for_average = False
+
+                # 問題点の座標を集めて一箇所に移動させる
+                ys_gather_and_shift_ng_points(contour, start_idx, end_idx, use_ng_points_for_average)
+
+            # オフカーブポイントなら、長さ比較で判定・対応。
+            # オンカーブポイント同士のベクトルと比較して3倍以上の大きさがあるならアウト
+            else:
+                len_cp = vec_cp[0]**2 + vec_cp[1]**2
+                len_cn = vec_cn[0]**2 + vec_cn[1]**2
+                len_pn = vec_pn[0]**2 + vec_pn[1]**2
+                # どちらかのベクトルがprev-next間のベクトルより3倍以上大きいなら、
+                # オフカーブポイントはprevとnextの中間点にに強制移動。
+                if len_cp > (3**2) * len_pn or len_cn > (3**2) * len_pn:
+                    start_idx = prev_idx
+                    end_idx = next_idx
+                    use_ng_points_for_average = False
+
+                    # 問題点の座標を集めて一箇所に移動させる
+                    ys_gather_and_shift_ng_points(contour, start_idx, end_idx, use_ng_points_for_average)
     return contour
 
 
 
 # グリフオブジェクトをコンター単位にバラして実行。通常はコレを呼べばOK。
 def ys_repair_spikes(glyph, angle_threshold=2):
+    proc_paths = []
     # 角度しきい値をラジアン角に変更
     thresh_rad = math.radians(angle_threshold)
     for contour in glyph.foreground:
-        # 2次ベジエのコンターは一度3次に変換してから処理
+        # 3次ベジエのコンターは一度2次に変換してから処理
         if contour.is_quadratic:
-            contour.is_quadratic = False
-            contour = ys_rmSpike(contour.dup(), thresh_rad)
-            contour.is_quadratic = True
+            proc_path = ys_rmSpike(contour.dup(), thresh_rad)
         else:
-            contour = ys_rmSpike(contour.dup(), thresh_rad)
+            contour.is_quadratic = True
+            proc_path = ys_rmSpike(contour.dup(), thresh_rad)
+            proc_path.is_quadratic = False
+        # 加工後のパスを保存
+        proc_paths.append(proc_path)
+
+    # レイヤを消去して加工したパスを書き戻す
+    glyph.foreground = fontforge.layer()
+    for contour in proc_paths:
+        glyph.foreground += contour
+
+    return glyph
 
 if __name__ == "__main__":
-    ys_rmSpike(contour, thresh_rad)
+    ys_repair_spikes(glyph, angle_threshold=2)

@@ -21,12 +21,10 @@ def ys_closepath(glyph):
             contour.closed = True
             close_paths.append(contour.dup())
 
-    # レイヤーをリセットして閉じたパスを書き戻す
+    # フォアグラウンドをクリアして、OKパス変数に入れてたコンターを書き戻す
     glyph.foreground = fontforge.layer()
     for contour in close_paths:
         glyph.foreground += contour
-    
-    glyph.addExtrema("all")
     return
 
 
@@ -38,7 +36,7 @@ def contour_area_and_points(contour):
     try:
         on_pts = []
         for i in range(len(contour)):
-            if contour[i].type != 'offcurve':
+            if contour[i].on_curve:
                 on_pts.append(contour[i])
         if len(on_pts) < 3:
             return 0.0, len(on_pts)
@@ -122,8 +120,8 @@ def ys_rm_spikecontours(glyph, c_thresh=0.1, g_thresh=0.001, p_thresh=10):
             ok_paths.append(contour.dup())  # 合格パスに追加
 
     # フォアグラウンドをクリアして、OKパス変数に入れてたコンターを書き戻す
-    glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
-    for contour in ok_paths:  # OKパスの書き戻し
+    glyph.foreground = fontforge.layer()
+    for contour in ok_paths:
         glyph.foreground += contour
     return
 
@@ -139,7 +137,7 @@ def ys_rm_isolatepath(glyph, min_distance=20):
     for contour in glyph.foreground:
         # オンクルーブポイントを抽出
         on_curve_points = [point for point in contour if point.on_curve]
-        
+
         # オンクルーブポイントが2点の場合に距離を計算
         if len(on_curve_points) == 2:
             distance = math.sqrt(
@@ -151,6 +149,11 @@ def ys_rm_isolatepath(glyph, min_distance=20):
         elif len(on_curve_points) > 2:
             # オンクルーブポイントが3点以上の場合は無条件でOK
             ok_paths.append(contour.dup())
+
+    # フォアグラウンドをクリアして、OKパス変数に入れてたコンターを書き戻す
+    glyph.foreground = fontforge.layer()
+    for contour in ok_paths:
+        glyph.foreground += contour
     return
 
 
@@ -169,10 +172,12 @@ def ys_rm_small_poly(glyph, width_threshold, height_threshold):
             ng_paths.append(contour.dup())  # 条件を満たすものをリストに追加
     # 問題のないパス(さっき保存できてないコンター)をOK変数にブチ込む
     ok_paths = [contour.dup() for contour in glyph.foreground if contour not in ng_paths]
+
     # フォアグラウンドをクリアして、OKパス変数に入れてたコンターを書き戻す
-    glyph.foreground = fontforge.layer() # フォアグラウンドをクリア
-    for contour in ok_paths:  # okパスの書き戻し
+    glyph.foreground = fontforge.layer()
+    for contour in ok_paths:
         glyph.foreground += contour
+    return
 
 
 
