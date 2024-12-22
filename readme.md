@@ -1,75 +1,74 @@
-# Bz�Ȃ낤�S�V�b�N / Bz�Ȃ낤����
+# Bzなろうゴシック / Bzなろう明朝
 
-���j�o�[�T���f�U�C���t�H���g��
-[BIZ UD�S�V�b�N](https://github.com/googlefonts/morisawa-biz-ud-gothic)
-[BIZ UD����](https://github.com/googlefonts/morisawa-biz-ud-mincho)
-�𒷑̉����������̃t�H���g�ł��B
+ユニバーサルデザインフォントの
+[BIZ UDゴシック](https://github.com/googlefonts/morisawa-biz-ud-gothic)
+[BIZ UD明朝](https://github.com/googlefonts/morisawa-biz-ud-mincho)
+を長体化しただけのフォントです。
 
-## �T�v
+## 概要
 
-�k�߂������ł��BExcel�Ƃ������Œ��̉����ł��Ȃ��\�t�g�Ŏg������ō��܂����B
-![���p�T���v���摜1](misc/sample-image.png)
-![���p�T���v���摜2](misc/letterpack.png)
+縮めただけです。Excelとか自分で長体化ができないソフトで使うつもりで作りました。
+![利用サンプル画像1](misc/sample-image.png)
+![利用サンプル画像2](misc/letterpack.png)
 
-## ���C�Z���X
-���ό��̃t�H���g�Ɠ������ASIL OPEN FONT LICENSE Version 1.1�ƂȂ��Ă��܂��B
-
-
-### ���m�̖��
-���ɖ����́ATTC�Ƀp�b�N���悤�Ƃ�����R�P��B���������񂾂낤�H
-���H���ɎQ�Ƃ��s�����ăG���[����������o��B
-���H����Mac�̖��O���ǂ�����ƌx�����o��B
-�������������񂲂��d�����B
-
-### �]�k1
-
-���������a���R���f���X�h�t�H���g�i�a���i���[�t�H���g�A�a�����̃t�H���g�j�́A
-�v�������̃t�H���g������������Ȃ������ЂŎg���Ȃ��č�����B
-
-��ɂ��������Ƃ���AExcel�ŃR���f���X�h�t�H���g���g����
-�a�p���������̏����ݒ肪�N�b�\�߂�ǂ������̂�
-�u���ꂢ�����w�肷��Ε����l�ߕ���I�v
-���ď�Ԃɂ������č��܂����B
+## ライセンス
+改変元のフォントと同じく、SIL OPEN FONT LICENSE Version 1.1となっています。
 
 
-### �]�k2
+### 既知の問題
+特に明朝体、TTCにパックしようとしたらコケる。何が悪いんだろう？
+加工時に参照が不正ってエラーがたくさん出る。
+処理がすんんんんんごい重たい。
 
-���̐��ʕ����̂����AFontForge�̃X�g���[�N�Ŕ�������
-���Ȍ����̖�����������v���Z�X�̕������l���邩���ˁ[�B
+### 余談1
+
+そもそも和文コンデンスドフォント（和文ナローフォント、和文長体フォント）は、
+プロ向けのフォントしか見当たらないから会社で使えなくて困るんよ。
+
+先にも書いたとおり、Excelでコンデンスドフォントを使うと
+和英入り交じりの書式設定がクッソめんどくさいので
+「これいっこ指定すれば文字詰め放題！」
+って状態にしたくて作りました。
+
+
+### 余談2
+
+この成果物自体よりも、FontForgeのストロークで発生する
+自己交差の問題を解決するプロセスの方が価値あるかもねー。
 
     ys_repair_Self_Insec
     glyph.round()
     glyph.removeOverlap()
 
-���ċ�ɁA�c�m�܂��Đ������Ōł߂Č����Ŏ̂ĂĂ܂��B
+って具合に、ツノ折って整数化で固めて結合で捨ててます。
 
-�yFont Forge�z���Ȍ���������������@ | Misskey.io
+【Font Forge】自己交差を解消する方法 | Misskey.io
 https://misskey.io/@yamatsumi_s/pages/1732899206177
 
 
-### �]�k3
+### 余談3
 
-���L�����������Ȃ�ׂɕ��ׂČ������Ă����Ηǂ��񂶂�l�H
-�Ǝv���Ď����Ă݂����ǁA���܂�ɂ��d�����Ȃ肷���āc�c
-�ƂĂ��X�N���v�g�������������ɖ����̂���c�c
+幅広げたいだけなら隣に並べて結合していけば良いんじゃネ？
+と思って試してみたけど、あまりにも重たくなりすぎて……
+とてもスクリプトが完走しそうに無いのが難……
 
-���s�������g�݂Ɋւ��Ă͂��Ă����A
-����̃��m�ł��X�N���v�g����������΂����ȃt�H���g�œ��������ł��邯�ǁA
-���̏����ނ������Ⴍ����d�����ł����A�������߂͏o���܂���ȁ[�B
+失敗した取り組みに関してはさておき、
+現状のモノでもスクリプト書き換えればいろんなフォントで同じ事ができるけど、
+この処理むっっちゃくちゃ重たいですし、おすすめは出来ませんなー。
 
-Ryzen5700G��8����Ńu���񂵂�5���Ԃ��炢�H
-�g�p��������1�v���Z�X������600MB���炢������A
-��������5GB�قǊJ���Ƃ��Ȃ��Ɨ�����Ǝv���B
-�R�A�ƃ������̋󂫂ɍ��킹��PS1�X�N���v�g�̕���x�͕ς����낵�B
+Ryzen5700Gで8並列でブン回して5時間ぐらい？
+使用メモリは1プロセスあたり600MBくらいだから、
+メモリは5GBほど開けとかないと落ちると思う。
+コアとメモリの空きに合わせてPS1スクリプトの並列度は変えるよろし。
 
 
-### �]�k4
+### 余談4
 
-�ȑO�́u�͂�Ԃ�S�V�b�N�v�Ȃǂ̖��O�Ńt�@�~������ς��Ă��܂������A
-���O�̃o���G�[�V�������߂�ǂ������Ȃ����̂ŉ�������������c�c('A`)
-���@�������ǁA���̕����킩��₷�����ǂ����Ȃ��āc�c
+以前は「はんぶんゴシック」などの名前でファミリ名を変えていましたが、
+名前のバリエーションがめんどくさくなったので改名しちゃった……('A`)
+無機質だけど、この方がわかりやすいし良いかなって……
 
-�ق�ŁA�Ȃ�ō��̖��O���unarrow�v����Ȃ��āunarow�v�ɂ���Ă邩���Ă����΁A
-����A�^�����Ƀi���[�t�H���g�����l�̎ז��ɂȂ�C��������Ŋ����Ă�typo�ł��B
+ほんで、なんで今の名前が「narrow」じゃなくて「narow」にされてるかっていえば、
+今後、真っ当にナローフォントを作る人の邪魔になる気がしたんで敢えてのtypoです。
 
 
