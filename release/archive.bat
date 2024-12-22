@@ -1,13 +1,13 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set VERSIONS=_v0.4.5.zip
+set VERSIONS=_v0.4.7.7z
 
 set SZIP="C:\Program Files\7-Zip\7z.exe"
 set SCRIPT_DIR=%~dp0
 set PKG_DIR=%~dp0\temp_pkg
 set OUTPUT_DIR=%~dp0
-set OPTIONS=-tzip -mx9
+set OPTIONS=-t7z -mx9 -m0=lzma2 -ms=on -mfb=273 -md=256m
 set UNITETTC=%SCRIPT_DIR%..\application\unitettc\unitettc64.exe
 set SOURCE_DIR=%SCRIPT_DIR%..\processed
 set TXT_DIR=%SCRIPT_DIR%\text
