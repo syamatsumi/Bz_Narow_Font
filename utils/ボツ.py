@@ -56,10 +56,10 @@ def build_fsSelection(
         fs_selection |= OBLIQUE
 
     return fs_selection
-    
-    
-    
-    
+
+
+
+
 
 # ベクトルが上方向にあるパスを右にオフセットする
 def ys_expand_Xweight(glyph, offset):
@@ -83,7 +83,7 @@ def ys_expand_Xweight(glyph, offset):
         # ys_upper_vector_offsetter(working_contour, offset)
         # 処理が済んだパスを保存。
         # contour_processe += working_contour
-        
+
     return
 
 
@@ -153,7 +153,7 @@ def ys_insert_point_on_turn(contour):
 
     contour = new_contour
 
-    return 
+    return
 
 
 
@@ -358,7 +358,7 @@ def finish_optimise(glyph, counter):
 
         # 終点に隣接するオフカーブポイント
         end_adjacent_idx = (end_idx - 1) % num_points
-        if (not contour[end_adjacent_idx].on_curve 
+        if (not contour[end_adjacent_idx].on_curve
             and end_adjacent_idx in problem_all_points):
             problem_all_points.remove(end_adjacent_idx)
 
@@ -518,6 +518,33 @@ def ys_anomality_repair(glyph, counter):
                         ys_repair_si_chain(glyph, counter)
     return
 
+
+
+
+    # スパイク状の独立したコンターを削除する。
+    # 変化が無くなるまで繰り返す。
+    stroke_prev = [contour.dup() for contour in glyph.foreground]
+    ys_repair_spikes(glyph, 3)
+    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+    stroke_aftr = [contour.dup() for contour in glyph.foreground]
+    if stroke_prev != stroke_aftr:
+        stroke_prev = [contour.dup() for contour in glyph.foreground]
+        ys_repair_spikes(glyph, 3)
+        ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+        stroke_aftr = [contour.dup() for contour in glyph.foreground]
+        if stroke_prev != stroke_aftr:
+            stroke_prev = [contour.dup() for contour in glyph.foreground]
+            ys_repair_spikes(glyph, 3)
+            ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+            stroke_aftr = [contour.dup() for contour in glyph.foreground]
+            if stroke_prev != stroke_aftr:
+                stroke_prev = [contour.dup() for contour in glyph.foreground]
+                ys_repair_spikes(glyph, 3)
+                ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
+                stroke_aftr = [contour.dup() for contour in glyph.foreground]
+                if stroke_prev != stroke_aftr:
+                    ys_repair_spikes(glyph, 3)
+                    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
 
 
 

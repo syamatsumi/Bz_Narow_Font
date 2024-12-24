@@ -15,8 +15,6 @@ Get-Content $iniFile | ForEach-Object {
 $ffpy = $($config['ffpy'])
 $ffscr = $($config['ffscr'])
 
-& $ffpy $scr MゴシB test 0.3
-#& $ffpy $scr MゴシB test 0.3 uni509C ampersand uni614B uniFF36 uni3085 uni2176 uni2177 dagger
-#& $ffpy $scr PゴシB BzなろうPゴシック30-Bold 0.3
-#& $ffpy $scr PミンR BzなろうP明朝30-Regular 0.3
-#& $ffpy $scr PミンB BzなろうP明朝30-Bold 0.3 uniff36
+
+& $ffpy $scr MゴシB testG 0.3 M Mu uni509C ampersand uni614B uniFF36 uni3085 uni2176 uni2177 dagger
+#& $ffpy $scr PミンB testM 0.9 M Mu uni509C ampersand uni614B uniFF36 uni3085 uni2176 uni2177 dagger

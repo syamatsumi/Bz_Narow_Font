@@ -64,46 +64,10 @@ def ys_widestroke(glyph, stroke_width, storoke_height, vshrink_ratio, counter=1)
     glyph.round()
     glyph.addExtrema("all")
     glyph.removeOverlap()
-
-    # 上の処理で千切れたツノを除去してもう一度ツノ折り。
-    # ここで出るノイズは角度が若干鈍い可能性あるから条件緩め。
-    # パスを閉じるタイミングとか特殊なんで、
-    # 処理内容が似てるからって関数に分離しない方が良いかも。
-    ys_closepath(glyph)
-    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
-    ys_repair_spikes(glyph, 3)
-    glyph.round()
-    glyph.addExtrema("all")
-    glyph.removeOverlap()
     # ゴミ掃除
     ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
     ys_rm_isolatepath(glyph)
     ys_rm_small_poly(glyph, 20, 30)
-
-    # スパイク状の独立したコンターを削除する。
-    # 変化が無くなるまで繰り返す。
-    stroke_prev = [contour.dup() for contour in glyph.foreground]
-    ys_repair_spikes(glyph, 3)
-    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
-    stroke_aftr = [contour.dup() for contour in glyph.foreground]
-    if stroke_prev != stroke_aftr:
-        stroke_prev = [contour.dup() for contour in glyph.foreground]
-        ys_repair_spikes(glyph, 3)
-        ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
-        stroke_aftr = [contour.dup() for contour in glyph.foreground]
-        if stroke_prev != stroke_aftr:
-            stroke_prev = [contour.dup() for contour in glyph.foreground]
-            ys_repair_spikes(glyph, 3)
-            ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
-            stroke_aftr = [contour.dup() for contour in glyph.foreground]
-            if stroke_prev != stroke_aftr:
-                stroke_prev = [contour.dup() for contour in glyph.foreground]
-                ys_repair_spikes(glyph, 3)
-                ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
-                stroke_aftr = [contour.dup() for contour in glyph.foreground]
-                if stroke_prev != stroke_aftr:
-                    ys_repair_spikes(glyph, 3)
-                    ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
 
     # 元の時計回りパスの書き戻し
     for contour in cw_paths:
@@ -124,8 +88,6 @@ def ys_widestroke(glyph, stroke_width, storoke_height, vshrink_ratio, counter=1)
     glyph.removeOverlap()  # 結合
 
     # 修復チェインの繰り返し実行。変化がなくなるか悪化するまで繰り返し。
-    ys_repair_si_chain(glyph, counter)
-    ys_repair_si_chain(glyph, counter)
     ys_anomality_repair(glyph, counter)
     return
 
