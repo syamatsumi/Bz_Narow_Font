@@ -13,7 +13,7 @@ from utils import ys_closepath, ys_repair_spikes, ys_rm_spikecontours
 from utils import ys_rm_isolatepath, ys_rm_small_poly
 from utils import ys_repair_si_chain, ys_rescale_chain, ys_simplify
 from utils import ys_widestroke
-from utils import ys_blacklist, ys_whitelist, ys_ignorlist, ys_sparselist
+from utils import ys_blacklist, ys_whitelist, ys_ignorlist, ys_sparselist, ys_swaplist, ys_pswaplist
 from bz_narow_property import shorten_style_rd, write_property
 
 # コマンドライン引数の処理
@@ -150,20 +150,51 @@ def Local_snapshot_sfd (font, glyph, proc_cnt, del_file, force=False):
         print(f"保存か削除に失敗したかも？　多分削除に……： {del_file} \r", flush=True)
     return del_file
 
+# 大きく縮める際、元から半分サイズのグリフがあるなら交換してしまう。
+def swap_hwglyph(font, glyph, is_propotional, stroke_flag):
+    # 元のグリフ幅を控えておく
+    orig_width = glyph.width
+
+    #スワップ処理
+    if is_propotional:
+        swap_flag = ys_pswaplist(font, glyph)
+    else:
+        swap_flag = ys_swaplist(font, glyph)
+
+    # 交換が成立していた場合、拡幅処理の影響を減らすため
+    if swap_flag:
+        swap_width = glyph.width
+        # 念の為0除算対策
+        if swap_width == 0:
+             return False
+        # 最初から縮小目標とほぼ近い幅のグリフはストロークの対象外にする。
+        # ストロークの影響を最小限に留めるために元の幅にまで広げる
+        elif (swap_width / orig_width) < VSHRINK_RATIO * 1.05:
+            expratio = orig_width / swap_width
+            stroke_flag = False
+        else:
+            expratio = orig_width / swap_width
+        # 幅統一用の拡幅処理
+        glyph.transform(psMat.scale(expratio, 1),"partialRefs")
+        glyph.addExtrema("all")
+    return stroke_flag
+
 # 強制的に全グリフの幅を揃えるパターン専用の処理
 def force_width_norm(glyph, em_size, stroke_flag):
     # 幅が極端に狭いグリフにはなにもしない
     if glyph.width < em_size / 3:
-         stroke_flag = False
-         allmono_ratio = 1
+         return False
     # 最初から縮小目標とほぼ近い幅のグリフはストロークの対象外にする。
     elif (glyph.width / em_size) < VSHRINK_RATIO * 1.05:
         stroke_flag = False
-        allmono_ratio = em_size / glyph.width
+        expratio = em_size / glyph.width
     # その他は幅をみんな同じに揃える
     else:
-        allmono_ratio = em_size / glyph.width
-    return allmono_ratio, stroke_flag
+        expratio = em_size / glyph.width
+    # 幅統一用の拡幅処理
+    glyph.transform(psMat.scale(expratio, 1),"partialRefs")
+    glyph.addExtrema("all")
+    return stroke_flag
 
 # 太りすぎたグリフを上手くフィットさせる。
 # グリフの幅まで変わると困るのでレイヤー単位で操作
@@ -334,6 +365,7 @@ def main():
 
     # 全部モノスペースのフラグを管理。
     mono_all = INPUT_FONTSTYLES.startswith("M")
+    is_propotional = INPUT_FONTSTYLES.startswith("P")
 
     # テスト用スクリプト。テストに不要なグリフを取り除く
     if TGTGRYPHNAME:
@@ -342,12 +374,6 @@ def main():
         for glyph in font.glyphs():
             if glyph.glyphname in TGTGRYPHNAME:
                 glyph.unlinkRef()
-        # テスト対象外のグリフを事前にピックアップ
-        tst_delete_glyphs = [glyph for glyph in font.glyphs() if glyph.glyphname not in TGTGRYPHNAME]
-        # テスト対象外のグリフを削除
-        print("testmode : Delete untested glyphs.", flush=True)
-        for glyph in tst_delete_glyphs:
-            font.removeGlyph(glyph)
 
     ######################################################################
     #　　　　　　　　　　　　　ループ 1（加工）　　　　　　　　　　　　　#
@@ -356,6 +382,11 @@ def main():
     proc_cnt: int = 0
 
     for glyph in font.glyphs():  # 全グリフをループ処理
+        if TGTGRYPHNAME:
+            if glyph.glyphname not in TGTGRYPHNAME:
+                # テスト対象外のグリフを削除する
+                font.removeGlyph(glyph)
+                continue
         # 出力に値しない(カラのグリフ)は無視
         if not glyph.isWorthOutputting():
             print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Glyphs not worthy of output...':<48}\r", end=" ", flush=True)
@@ -377,6 +408,9 @@ def main():
 
         # 基本ストローク幅のセッティング
         base_stroke_width = STROKE_WIDTH_MIN + STROKE_WIDTH_SF * (1 - VSHRINK_RATIO)
+        # 基本ストローク幅は整数かつ偶数に設定する
+        base_stroke_width = (base_stroke_width // 2) * 2
+
         if font_weight > 500:
             if base_stroke_width > 40:
                 stroke_width = 40
@@ -408,12 +442,14 @@ def main():
             stroke_width = base_stroke_width
             stroke_flag = True
 
-        if mono_all:  # 強制モノスペース版は先に拡幅処理
-            allmono_ratio, stroke_flag = force_width_norm(glyph, em_size, stroke_flag)
-            glyph.transform(psMat.scale(allmono_ratio, 1),"partialRefs")  # 幅統一用の拡幅処理
-            glyph.addExtrema("all")
+        # グリフの入替えでイイ感じに拡幅できそうな対象は入替えてしまいましょう。
+        if VSHRINK_RATIO < 0.66:
+            stroke_flag = swap_hwglyph(font, glyph, is_propotional, stroke_flag)
 
-        if stroke_flag:
+        if mono_all:  # 強制モノスペース版は先に拡幅処理
+            stroke_flag = force_width_norm(glyph, em_size, stroke_flag)
+
+        if stroke_flag and stroke_width > 10:
             # 元のBBOXを控えておく。
             obbox = glyph.boundingBox()
 
@@ -437,6 +473,7 @@ def main():
 
             print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair Plus':<48}\r", end=" ", flush=True)
             anomality_repair2(glyph)
+
 
         # 指定の縮小率に従って縦横比変更
         glyph.transform(psMat.scale(VSHRINK_RATIO, 1),"partialRefs")
@@ -481,7 +518,7 @@ def main():
                 print(f"合成グリフをスキップ： {glyph.glyphname} \r", end=" ", flush=True)
                 continue  # コンポジットグリフはスキップ
             if ys_ignorlist(glyph):
-                print(f"無視リスト対象のグリフをスキップ： {glyph.glyphname}\r", end=" ", flush=True)
+                # print(f"無視リスト対象のグリフをスキップ： {glyph.glyphname}\r", end=" ", flush=True)
                 continue
 
             # 仕上げ処理

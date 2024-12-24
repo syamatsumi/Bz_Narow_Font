@@ -546,5 +546,10 @@ def ys_anomality_repair(glyph, counter):
                     ys_repair_spikes(glyph, 3)
                     ys_rm_spikecontours(glyph, 0.1, 0.001, 10)
 
-
+         テスト対象外のグリフを事前にピックアップ
+        tst_delete_glyphs = [glyph for glyph in font.glyphs() if glyph.glyphname not in TGTGRYPHNAME]
+         テスト対象外のグリフを削除
+        print("testmode : Delete untested glyphs.", flush=True)
+        for glyph in tst_delete_glyphs:
+            font.removeGlyph(glyph)
 

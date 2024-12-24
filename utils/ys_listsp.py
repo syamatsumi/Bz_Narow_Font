@@ -491,17 +491,18 @@ def ys_sparselist(glyph):
         }
 
     # リストのコードポイント範囲。
-    # 範囲は終点が無視されるため指定範囲は終点+1
+    # 範囲は終点が無視される点に注意
     sparselist_ranges = [
-        range(0x21, 0x39 + 1),
-        range(0x42, 0x4C + 1),
-        range(0x4E, 0x56 + 1),
-        range(0x58, 0x6C + 1),
-        range(0x6E, 0x76 + 1),
-        range(0x78, 0x7F + 1),
-        range(0x3000, 0x301F + 1),
-        range(0x3030, 0x30FF + 1),
-        range(0x31F0, 0x31FF + 1),
+        range(0x21, 0x40),
+        range(0x42, 0x4D),
+        range(0x4E, 0x57),
+        range(0x58, 0x6D),
+        range(0x6E, 0x77),
+        range(0x78, 0x7F),
+        range(0x2500, 0x2550),
+        range(0x3000, 0x3020),
+        range(0x3030, 0x3100),
+        range(0x31F0, 0x3200),
     ]
 
     # コードポイントが範囲内かチェック

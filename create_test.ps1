@@ -16,5 +16,5 @@ $ffpy = $($config['ffpy'])
 $ffscr = $($config['ffscr'])
 
 
-& $ffpy $scr MÉSÉVB testG 0.3 M Mu uni509C ampersand uni614B uniFF36 uni3085 uni2176 uni2177 dagger
+& $ffpy $scr MÉSÉVB testG 0.3 M Mu uni3050 uni509C ampersand uni614B uniFF36 uni3085 uni2176 uni2177 dagger
 #& $ffpy $scr PÉ~ÉìB testM 0.9 M Mu uni509C ampersand uni614B uniFF36 uni3085 uni2176 uni2177 dagger
