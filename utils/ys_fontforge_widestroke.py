@@ -60,7 +60,7 @@ def ys_widestroke(glyph, stroke_width, storoke_height, vshrink_ratio, counter=1)
     # この作業はアーティファクトの除去が目的というより、
     # 後にアーティファクトが発生するのを予防するためのもの。
     ys_closepath(glyph)
-    ys_repair_spikes(glyph, 1)
+    ys_repair_spikes(glyph, 0.5)
     glyph.round()
     glyph.addExtrema("all")
     glyph.removeOverlap()
@@ -86,34 +86,8 @@ def ys_widestroke(glyph, stroke_width, storoke_height, vshrink_ratio, counter=1)
     glyph.round()
     glyph.addExtrema("all")
     glyph.removeOverlap()  # 結合
+    glyph.addExtrema("all")
 
-    # 修復チェインの繰り返し実行。変化がなくなるか悪化するまで繰り返し。
-    ys_anomality_repair(glyph, counter)
-    return
-
-
-
-# 修復チェインの繰り返し実行。変化がなくなるか悪化するなら終了。
-def ys_anomality_repair(glyph, counter):
-    ys_repair_si_chain(glyph, counter)
-    if (glyph.validate(1) & 0x0FF) != 0 and (glyph.validate(1) & 0x0FF) != 0x04:
-        previous_flags = glyph.validate(1) & 0x0FF
-        ys_repair_si_chain(glyph, counter)
-        current_flags = glyph.validate(1) & 0x0FF
-        if (previous_flags & ~current_flags) != 0 and current_flags != 0:
-            previous_flags = glyph.validate(1) & 0x0FF
-            ys_repair_si_chain(glyph, counter)
-            current_flags = glyph.validate(1) & 0x0FF
-            if (previous_flags & ~current_flags) != 0 and current_flags != 0:
-                previous_flags = glyph.validate(1) & 0x0FF
-                ys_repair_si_chain(glyph, counter)
-                current_flags = glyph.validate(1) & 0x0FF
-                if (previous_flags & ~current_flags) != 0 and current_flags != 0:
-                    previous_flags = glyph.validate(1) & 0x0FF
-                    ys_repair_si_chain(glyph, counter)
-                    current_flags = glyph.validate(1) & 0x0FF
-                    if (previous_flags & ~current_flags) != 0 and current_flags != 0:
-                        ys_repair_si_chain(glyph, counter)
     return
 
 
@@ -148,134 +122,133 @@ def ys_ccwhogolist(glyph):
 # グリフを渡したら対象かどうか判定して返す。
 def ys_dakutenlist(glyph):
     dakutenlist_set = {
-        "uni0022",  # "
-        "uni00A8",  # ¨
-        "uni00AB",  # «
-        "uni00BB",  # »
-        "uni02DD",  # ˝
-        "uni0308",  # ̈
-        "uni030B",  # ̋
-        "uni030F",  # ̏
-        "uni201C",  # “
-        "uni201D",  # "
-        "uni201E",  # „
-        "uni2033",  # ″
-        "uni226A",  # ≪
-        "uni226B",  # ≫
-        "uni3003",  # 〃
-        "uni300A",  # 《
-        "uni300B",  # 》
-        "uni3034",  # 〴
-        "uni304C",  # が
-        "uni304E",  # ぎ
-        "uni3050",  # ぐ
-        "uni3052",  # げ
-        "uni3054",  # ご
-        "uni3056",  # ざ
-        "uni3058",  # じ
-        "uni305A",  # ず
-        "uni305C",  # ぜ
-        "uni305E",  # ぞ
-        "uni3060",  # だ
-        "uni3062",  # ぢ
-        "uni3065",  # づ
-        "uni3067",  # で
-        "uni3069",  # ど
-        "uni3070",  # ば
-        "uni3073",  # び
-        "uni3076",  # ぶ
-        "uni3079",  # べ
-        "uni307C",  # ぼ
-        "uni3094",  # ゔ
-        "uni3099",  # ゙
-        "uni309B",  # ﾞ
-        "uni309E",  # ゞ
-        "uni30AC",  # ｶﾞ
-        "uni30AE",  # ｷﾞ
-        "uni30B0",  # ｸﾞ
-        "uni30B2",  # ｹﾞ
-        "uni30B4",  # ｺﾞ
-        "uni30B6",  # ｻﾞ
-        "uni30B8",  # ｼﾞ
-        "uni30BA",  # ｽﾞ
-        "uni30BC",  # ｾﾞ
-        "uni30BE",  # ｿﾞ
-        "uni30C0",  # ﾀﾞ
-        "uni30C2",  # ﾁﾞ
-        "uni30C5",  # ﾂﾞ
-        "uni30C7",  # ﾃﾞ
-        "uni30C9",  # ﾄﾞ
-        "uni30D0",  # ﾊﾞ
-        "uni30D3",  # ﾋﾞ
-        "uni30D6",  # ﾌﾞ
-        "uni30D9",  # ﾍﾞ
-        "uni30DC",  # ﾎﾞ
-        "uni30F4",  # ヴ
-        "uni30F7",  # ヷ
-        "uni30F8",  # ヸ
-        "uni30F9",  # ヹ
-        "uni30FA",  # ヺ
-        "uni30FE",  # ヾ
-        "uni30FC",  # ｰ
-        "uni30FD",  # ヽ
-        "uni30FE",  # ヾ
-        "uni30FF",  # ヿ
-        "uni3100",  # ㄀
-        "uni3101",  # ㄁
-        "uni3102",  # ㄂
-        "uni3103",  # ㄃
-        "uni3104",  # ㄄
-        "uniFF02",  # "
-        "uniFF9E",  # ﾞ
-        "uni301D.vert",  # 〝
-        "uni301F.vert",  # 〟
-        "uni309B.vert",  # ﾞ
-        "uni309E.vert",  # ゞ
-        "uni30FE.vert",  # ヾ
-        "quotedblright.hwid",  #
-        "uni30F4.aalt",  # ヴ
-        "uni30AC.aalt",  # ｶﾞ
-        "uni30AE.aalt",  # ｷﾞ
-        "uni30B0.aalt",  # ｸﾞ
-        "uni30B2.aalt",  # ｹﾞ
-        "uni30B4.aalt",  # ｺﾞ
-        "uni30B6.aalt",  # ｻﾞ
-        "uni30B8.aalt",  # ｼﾞ
-        "uni30BA.aalt",  # ｽﾞ
-        "uni30BC.aalt",  # ｾﾞ
-        "uni30BE.aalt",  # ｿﾞ
-        "uni30C0.aalt",  # ﾀﾞ
-        "uni30C2.aalt",  # ﾁﾞ
-        "uni30C5.aalt",  # ﾂﾞ
-        "uni30C7.aalt",  # ﾃﾞ
-        "uni30C9.aalt",  # ﾄﾞ
-        "uni30D0.aalt",  # ﾊﾞ
-        "uni30D3.aalt",  # ﾋﾞ
-        "uni30D6.aalt",  # ﾌﾞ
-        "uni30D9.aalt",  # ﾍﾞ
-        "uni30DC.aalt",  # ﾎﾞ
-        "uni304C.aalt",  # が
-        "uni304E.aalt",  # ぎ
-        "uni3050.aalt",  # ぐ
-        "uni3052.aalt",  # げ
-        "uni3054.aalt",  # ご
-        "uni3056.aalt",  # ざ
-        "uni3058.aalt",  # じ
-        "uni305A.aalt",  # ず
-        "uni305C.aalt",  # ぜ
-        "uni305E.aalt",  # ぞ
-        "uni3060.aalt",  # だ
-        "uni3062.aalt",  # ぢ
-        "uni3065.aalt",  # づ
-        "uni3067.aalt",  # で
-        "uni3069.aalt",  # ど
-        "uni3070.aalt",  # ば
-        "uni3073.aalt",  # び
-        "uni3076.aalt",  # ぶ
-        "uni3079.aalt",  # べ
-        "uni307C.aalt",  # ぼ
-        "uni5FC4",  # 忄
-
+    "quotedbl",  # "
+    "dieresis",  # ¨
+    "guillemotleft",  # «
+    "guillemotright",  # »
+    "hungarumlaut",  # ˝
+    "uni0308",  # ̈
+    "uni030B",  # ̋
+    "uni030F",  # ̏
+    "quotedblleft",  # “
+    "quotedblright",  # "
+    "quotedblbase",  # „
+    "second",  # ″
+    "uni226A",  # ≪
+    "uni226B",  # ≫
+    "uni3003",  # 〃
+    "uni300A",  # 《
+    "uni300B",  # 》
+    "uni3034",  # 〴
+    "uni304C",  # が
+    "uni304E",  # ぎ
+    "uni3050",  # ぐ
+    "uni3052",  # げ
+    "uni3054",  # ご
+    "uni3056",  # ざ
+    "uni3058",  # じ
+    "uni305A",  # ず
+    "uni305C",  # ぜ
+    "uni305E",  # ぞ
+    "uni3060",  # だ
+    "uni3062",  # ぢ
+    "uni3065",  # づ
+    "uni3067",  # で
+    "uni3069",  # ど
+    "uni3070",  # ば
+    "uni3073",  # び
+    "uni3076",  # ぶ
+    "uni3079",  # べ
+    "uni307C",  # ぼ
+    "uni3094",  # ゔ
+    "uni3099",  # ゙
+    "uni309B",  # ﾞ
+    "uni309E",  # ゞ
+    "uni30AC",  # ｶﾞ
+    "uni30AE",  # ｷﾞ
+    "uni30B0",  # ｸﾞ
+    "uni30B2",  # ｹﾞ
+    "uni30B4",  # ｺﾞ
+    "uni30B6",  # ｻﾞ
+    "uni30B8",  # ｼﾞ
+    "uni30BA",  # ｽﾞ
+    "uni30BC",  # ｾﾞ
+    "uni30BE",  # ｿﾞ
+    "uni30C0",  # ﾀﾞ
+    "uni30C2",  # ﾁﾞ
+    "uni30C5",  # ﾂﾞ
+    "uni30C7",  # ﾃﾞ
+    "uni30C9",  # ﾄﾞ
+    "uni30D0",  # ﾊﾞ
+    "uni30D3",  # ﾋﾞ
+    "uni30D6",  # ﾌﾞ
+    "uni30D9",  # ﾍﾞ
+    "uni30DC",  # ﾎﾞ
+    "uni30F4",  # ヴ
+    "uni30F7",  # ヷ
+    "uni30F8",  # ヸ
+    "uni30F9",  # ヹ
+    "uni30FA",  # ヺ
+    "uni30FE",  # ヾ
+    "uni30FC",  # ｰ
+    "uni30FD",  # ヽ
+    "uni30FE",  # ヾ
+    "uni30FF",  # ヿ
+    "uni3100",  # ㄀
+    "uni3101",  # ㄁
+    "uni3102",  # ㄂
+    "uni3103",  # ㄃
+    "uni3104",  # ㄄
+    "uniFF02",  # "
+    "uniFF9E",  # ﾞ
+    "uni301D.vert",  # 〝
+    "uni301F.vert",  # 〟
+    "uni309B.vert",  # ﾞ
+    "uni309E.vert",  # ゞ
+    "uni30FE.vert",  # ヾ
+    "quotedblright.hwid",  #
+    "uni30F4.aalt",  # ヴ
+    "uni30AC.aalt",  # ｶﾞ
+    "uni30AE.aalt",  # ｷﾞ
+    "uni30B0.aalt",  # ｸﾞ
+    "uni30B2.aalt",  # ｹﾞ
+    "uni30B4.aalt",  # ｺﾞ
+    "uni30B6.aalt",  # ｻﾞ
+    "uni30B8.aalt",  # ｼﾞ
+    "uni30BA.aalt",  # ｽﾞ
+    "uni30BC.aalt",  # ｾﾞ
+    "uni30BE.aalt",  # ｿﾞ
+    "uni30C0.aalt",  # ﾀﾞ
+    "uni30C2.aalt",  # ﾁﾞ
+    "uni30C5.aalt",  # ﾂﾞ
+    "uni30C7.aalt",  # ﾃﾞ
+    "uni30C9.aalt",  # ﾄﾞ
+    "uni30D0.aalt",  # ﾊﾞ
+    "uni30D3.aalt",  # ﾋﾞ
+    "uni30D6.aalt",  # ﾌﾞ
+    "uni30D9.aalt",  # ﾍﾞ
+    "uni30DC.aalt",  # ﾎﾞ
+    "uni304C.aalt",  # が
+    "uni304E.aalt",  # ぎ
+    "uni3050.aalt",  # ぐ
+    "uni3052.aalt",  # げ
+    "uni3054.aalt",  # ご
+    "uni3056.aalt",  # ざ
+    "uni3058.aalt",  # じ
+    "uni305A.aalt",  # ず
+    "uni305C.aalt",  # ぜ
+    "uni305E.aalt",  # ぞ
+    "uni3060.aalt",  # だ
+    "uni3062.aalt",  # ぢ
+    "uni3065.aalt",  # づ
+    "uni3067.aalt",  # で
+    "uni3069.aalt",  # ど
+    "uni3070.aalt",  # ば
+    "uni3073.aalt",  # び
+    "uni3076.aalt",  # ぶ
+    "uni3079.aalt",  # べ
+    "uni307C.aalt",  # ぼ
+    "uni5FC4"  # 忄
     }
     # グリフ名がリストにあるかチェック
     if glyph.glyphname in dakutenlist_set:

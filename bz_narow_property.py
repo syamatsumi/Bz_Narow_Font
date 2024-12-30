@@ -8,7 +8,7 @@ import re
 # フォント固有の値を書き込んだりする方のスクリプト。
 # 改造元が異なるフォントを扱う際は、これとiniを弄れば済むようにしたつもり……
 
-def shorten_style_rd(input_fontstyles, ratio):
+def shorten_style_rd(input_fontstyles):
     font_styles = {
         "ゴシR": {"spacing_type": "Monospace", "serif_type": "sans", "weight": "Regular"},
         "ゴシB": {"spacing_type": "Monospace", "serif_type": "sans", "weight": "Bold"},
@@ -82,7 +82,7 @@ def write_property(ini_name, input_fontstyles, vshrink_ratio, font):
     MPtype,
     serif_type_e,
     serif_type_j
-    ) = shorten_style_rd(input_fontstyles, vshrink_ratio)
+    ) = shorten_style_rd(input_fontstyles)
 
     settings = configparser.ConfigParser()
     settings.read(ini_name, encoding="utf-8")

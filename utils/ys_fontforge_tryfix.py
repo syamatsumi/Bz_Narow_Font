@@ -47,7 +47,7 @@ def ys_repair_si_chain(glyph, proc_cnt):
     mode = f"{glyph.validate(1):x}"
     if (glyph.validate(1) & 0x0FF) != 0:
         previous_flags = glyph.validate(1) & 0x0FF
-        for stronger in range(1, 6):  # 強度1から5を順番に試す
+        for stronger in range(1, 4):  # 強度1から3を順番に試す
             print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair 'f'{stronger} mode'f'{mode}':<48}\r", end=" ", flush=True)
             ys_repair_si(glyph, stronger * 0.1, 0.1 + stronger * 0.01)  # 修復処理
             current_flags = glyph.validate(1) & 0x0FF
@@ -170,7 +170,7 @@ def ys_rescale_chain(glyph):
 # 単純化による自己交差の除去試行
 def ys_simplify(glyph):
     # 単純化の設定。ignoreextrema と setstarttoextremum を有効化
-    flags = ["ignoreextrema", "setstarttoextremum", "removesingletonpoints"]  
+    flags = ["ignoreextrema", "setstarttoextremum", "removesingletonpoints"]
 
     ys_rm_small_poly(glyph, 20, 20) # ごみ掃除関数
     # 自己交差したパスをNGパス変数にブチ込む(新規)
@@ -198,7 +198,7 @@ def ys_simplify(glyph):
     for contour in ok_paths:  # OKパスを書き戻す
         glyph.foreground += contour
         contour.addExtrema("all")
-    
+
     # 単純化の参考。
     # [error_bound, flags, tan_bounds, linefixup, linelenmax]
     #"ignoreslopes",  # Allow slopes to change

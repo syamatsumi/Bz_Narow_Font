@@ -6,12 +6,18 @@ import math
 # 開いたパスを閉じるだけの関数。
 def ys_closepath(glyph):
     close_paths = []
+    open_paths = []
+    # 無事なパスと問題のあるパスの選り分け
     for contour in glyph.foreground:
-        contour.addExtrema("all")
         if contour.closed:
             close_paths.append(contour.dup())
+        else:
+            open_paths.append(contour.dup())
+
+    # 空いたパスの処置
+    for contour in open_paths:
         # 繋いでもゴミにしかならない直線のみのパスは無視。
-        elif len(contour) > 2:
+        if len(contour) > 2:
             start_point = contour[0]
             end_point = contour[-1]
             # 始点と終点が異なる位置にある場合は線を追加。

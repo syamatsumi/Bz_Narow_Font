@@ -58,4 +58,4 @@ from .ys_listbk import ys_blacklist
 from .ys_listwh import ys_whitelist
 from .ys_listig import ys_ignorlist
 from .ys_listsp import ys_sparselist
-from .ys_listsw import ys_swaplist, ys_pswaplist
+from .ys_listsw import ys_swaplist, ys_pswaplist, ys_mswaplist

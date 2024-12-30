@@ -1,6 +1,15 @@
 pause
+# 実行ファイル
+$scriptname = "bz_narow_core"
+$scriptfullname = "{0}.py" -f $scriptname
+
+# 最大同時実行数
+$maxParallel = 7
+
 # 実行するコマンドのリスト
 $commands = @(
+"MゴシB BzなろうMゴシック100-Bold 1.0",
+"MゴシR BzなろうMゴシック100-Regular 1.0",
 "MゴシB BzなろうMゴシック20-Bold 0.2",
 "MゴシR BzなろうMゴシック20-Regular 0.2",
 "MゴシB BzなろうMゴシック30-Bold 0.3",
@@ -17,6 +26,8 @@ $commands = @(
 "MゴシR BzなろうMゴシック80-Regular 0.8",
 "MゴシB BzなろうMゴシック90-Bold 0.9",
 "MゴシR BzなろうMゴシック90-Regular 0.9",
+"PゴシB BzなろうPゴシック100-Bold 1.0",
+"PゴシR BzなろうPゴシック100-Regular 1.0",
 "PゴシB BzなろうPゴシック20-Bold 0.2",
 "PゴシR BzなろうPゴシック20-Regular 0.2",
 "PゴシB BzなろうPゴシック30-Bold 0.3",
@@ -33,6 +44,8 @@ $commands = @(
 "PゴシR BzなろうPゴシック80-Regular 0.8",
 "PゴシB BzなろうPゴシック90-Bold 0.9",
 "PゴシR BzなろうPゴシック90-Regular 0.9",
+"ゴシB Bzなろうゴシック100-Bold 1.0",
+"ゴシR Bzなろうゴシック100-Regular 1.0",
 "ゴシB Bzなろうゴシック40-Bold 0.4",
 "ゴシR Bzなろうゴシック40-Regular 0.4",
 "ゴシB Bzなろうゴシック50-Bold 0.5",
@@ -47,15 +60,16 @@ $commands = @(
 "ゴシR Bzなろうゴシック90-Regular 0.9"
 )
 
-# 実行ファイル
-$scriptname = "bz_narow_core"
-
-# 拡張子を追加してファイル名を作成
-$scriptfullname = "{0}.py" -f $scriptname
-$iniFile = "{0}.ini" -f $scriptname
-
-# 最大同時実行数
-$maxParallel = 7
+# 実行ファイル最後のアンダーバー前後をピックアップ
+if ($scriptname -match "^(.*)_(.*)$") {
+    $scr_prefix = $matches[1]
+    $scr_suffix = $matches[2]
+    $iniFile = "{0}_{1}.ini" -f $scr_prefix, "settings"
+} else {
+    # アンダーバーがなければそのまま
+    $iniFile = "{0}.ini" -f $scriptname
+    $scr_suffix = $scriptname
+}
 
 # 実行中のプロセスを管理
 $runningJobs = @()
@@ -75,6 +89,7 @@ foreach ($command in $commands) {
         continue
     }
 
+    # コンフィグファイルの読み込み
     $config = @{}
     Get-Content $iniFile | ForEach-Object {
         if ($_ -match '^([^#;]+)=(.+)$') {
@@ -84,17 +99,18 @@ foreach ($command in $commands) {
     }   }
     $ffpy = $($config['ffpy'])
     $build_dir = $($config['Build_Fonts_Dir'])
+    $warnlog_dir = Join-Path $build_dir "warning_log"
 
     # フォルダが存在しない場合は作成する
-    if (-not (Test-Path -Path $build_dir)) {
-        New-Item -Path $build_dir -ItemType Directory | Out-Null
-        Write-Host "Created directory: $build_dir"
+    if (-not (Test-Path -Path $warnlog_dir)) {
+        New-Item -Path $warnlog_dir -ItemType Directory -Force | Out-Null
+        Write-Host "Created directory: $warnlog_dir"
     }
 
     # コマンドを実行
     $CommandLine = @($scriptfullname) + $args
     Write-Host "Executing: $ffpy $scriptfullname $args"
-    $logFile = "$build_dir\$($args[1])_stdout.err"  # 引数3を抽出してログファイル名を生成
+    $logFile = "$warnlog_dir\$($args[1])_$scr_suffix.err"
     try {
         $process = Start-Process -FilePath $ffpy `
             -ArgumentList $CommandLine `

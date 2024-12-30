@@ -553,3 +553,44 @@ def ys_anomality_repair(glyph, counter):
         for glyph in tst_delete_glyphs:
             font.removeGlyph(glyph)
 
+
+
+
+
+# 大きく縮める際、元から半分サイズのグリフがあるなら交換してしまう。
+def swap_hwglyph(font, glyph, is_propotional, stroke_flag, base_stroke_width):
+    # 元のグリフ幅を控えておく
+    orig_width = glyph.width
+
+    #スワップ処理
+    if is_propotional:
+        swap_flag = ys_pswaplist(font, glyph)
+    else:
+        swap_flag = ys_swaplist(font, glyph)
+
+    # 交換が成立していた場合、拡幅処理の影響を減らすため
+    if swap_flag:
+        swap_width = glyph.width
+        # 念の為0除算対策
+        if swap_width == 0:
+             return False
+        # 最初から縮小目標とほぼ近い幅のグリフはストロークの対象外にする。
+        # ストロークの影響を最小限に留めるために元の幅にまで広げる
+        elif (swap_width / orig_width) <= VSHRINK_RATIO * 1.05:
+            expratio = orig_width / swap_width
+            stroke_flag = False
+        else:
+            expratio = orig_width / swap_width
+        # 基本ストローク幅のセッティング
+        base_stroke_width = STROKE_WIDTH_MIN + STROKE_WIDTH_SF * (1 - (VSHRINK_RATIO / expratio))
+        # 基本ストローク幅は整数かつ偶数に設定する
+        base_stroke_width = (base_stroke_width // 2) * 2
+        if base_stroke_width <= 10:
+            stroke_flag = False
+
+        glyph.transform(psMat.scale(expratio, 1),"partialRefs")
+        glyph.addExtrema("all")
+    return stroke_flag, base_stroke_width
+
+
+

@@ -11,9 +11,11 @@ import math
 
 from utils import ys_closepath, ys_repair_spikes, ys_rm_spikecontours
 from utils import ys_rm_isolatepath, ys_rm_small_poly
-from utils import ys_repair_si_chain, ys_rescale_chain, ys_simplify
 from utils import ys_widestroke
-from utils import ys_blacklist, ys_whitelist, ys_ignorlist, ys_sparselist, ys_swaplist, ys_pswaplist
+from utils import ys_blacklist, ys_whitelist, ys_ignorlist, ys_sparselist, ys_swaplist, ys_pswaplist, ys_mswaplist
+from utils import ys_repair_si_chain, ys_rescale_chain, ys_simplify
+
+# ファイル名変えたらここも要書換え
 from bz_narow_property import shorten_style_rd, write_property
 
 # コマンドライン引数の処理
@@ -30,16 +32,24 @@ except ValueError:
     print("Error: <stroke_width> and <VSHRINK_RATIO> must be numbers.", flush=True)
     sys.exit(1)
 
-# カレントディレクトリを保存する
-current_dir = os.getcwd()
-
-# 一旦、情報収集のためにスクリプトの場所をカレントディレクトリに設定する。
+# スクリプトの場所をカレントディレクトリに設定する。
 this_script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(this_script_dir)
 
-# 設定ファイルの名前は自分の名前の拡張子違い
-this_script_name = os.path.basename(__file__)  # 現在のスクリプト名を取得
-ini_name = os.path.splitext(this_script_name)[0] + ".ini"  # 拡張子を .ini に変更
+# 設定ファイルのパス設定、現在のスクリプト名を取得
+this_script_name = os.path.basename(__file__)
+# 拡張子を除外する
+base_name = os.path.splitext(this_script_name)[0]
+
+# 名前にアンダーバーがある場合
+if "_" in base_name:
+    # hoge_hoge.pyならhoge_settings.iniに。
+    prefix, _, _ = base_name.rpartition("_")
+    ini_name = f"{prefix}_settings.ini"
+# 名前にアンダーバーがない場合は
+else:
+    # hogehoge.pyからhogehoge.iniに。
+    ini_name = f"{base_name}.ini"
 ini_path = os.path.join(this_script_dir, ini_name)
 
 # 設定ファイルを読み込む
@@ -52,13 +62,7 @@ BUILD_FONTS_DIR  = settings.get("DEFAULT", "Build_Fonts_Dir")
 STROKE_WIDTH_SF  = float(settings.get("DEFAULT", "Stroke_Width_SF"))
 STROKE_WIDTH_MIN = float(settings.get("DEFAULT", "Stroke_Width_Min"))
 STOROKE_HEIGHT   = float(settings.get("DEFAULT", "Storoke_Height"))
-STRWR_WEIGHT = float(settings.get("DEFAULT", "StrWR_Weight"))
-STRWR_POINTS = float(settings.get("DEFAULT", "StrWR_Points"))
-REDUCE_RATIO = float(settings.get("DEFAULT", "Reduce_Ratio"))
-
 PRESAVE_INTERVAL = int(settings.get("DEFAULT", "Presave_Interval"))
-IS_PROPORTIONAL_CUTOFF_VARIANCE = int(settings.get("DEFAULT", "is_proportional_cutoff_variance"))
-PROPOTIONAL_SIDEBEARING_DIVISOR  = float(settings.get("DEFAULT", "propotional_sidebearing_divisor"))
 
 # main関数内でlocal_setup_logger(OUTPUT_NAME) 使って設定。
 logger = logging.getLogger()
@@ -76,12 +80,12 @@ class StreamToLogger:
     def flush(self):
         pass  # バッファのフラッシュは不要
 
-def local_setup_logger(OUTPUT_NAME):
+def local_setup_logger(OUTPUT_NAME, suffix):
     global logger  # グローバルでロガーの設定をする。
     logger = logging.getLogger("custom_logger")
     logger.setLevel(logging.DEBUG)  # 全てのログを記録対象にする
     # ログファイルの記録先
-    Log_file_path = os.path.join(BUILD_FONTS_DIR, f"{OUTPUT_NAME}_verify.log")
+    Log_file_path = os.path.join(BUILD_FONTS_DIR, f"{suffix}_log", f"{OUTPUT_NAME}_{suffix}.log")
     # ファイルハンドラ: WARNING以上をファイルに記録
     file_handler = logging.FileHandler(Log_file_path)
     file_handler.setLevel(logging.WARNING)
@@ -99,33 +103,6 @@ def local_setup_logger(OUTPUT_NAME):
     stderr_handler.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
     logger.addHandler(stderr_handler)
     return logger
-
-# メイン関数の冒頭
-def setup():
-    os.makedirs(BUILD_FONTS_DIR, exist_ok=True)  # 作業用のディレクトリを作成
-    logger = local_setup_logger(OUTPUT_NAME)  # ログ出力の設定
-    # 読み込むフォントのディレクトリまで確定させる
-    input_fontname = shorten_style_rd(INPUT_FONTSTYLES, VSHRINK_RATIO)[0]
-    input_fontfile = os.path.join(SOURCE_FONTS_DIR, input_fontname)
-    print (f"input_fontfile \r", end=" ", flush=True)
-    font = fontforge.open(input_fontfile)  # フォントを開く
-    #一通り情報を集め終わったので元のカレントディレクトリに戻る
-    os.chdir(current_dir)
-    # 一時ファイル名を付けてパスを確認
-    temp_file = f"{OUTPUT_NAME}_temp_0.sfd"
-    temp_file_path = os.path.join(BUILD_FONTS_DIR, temp_file)
-    del_file = temp_file  # あとで消す時用
-    return font, del_file, temp_file, temp_file_path
-
-# SFDに形式を直して開き直し
-def save_and_open(font, filepath):
-    print(f"保存して開きなおす。file: {filepath}\r", end=" ", flush=True)
-    font.save(filepath)
-    font.close()
-    font = fontforge.open(filepath)
-    print(f"開きなおした file: {filepath}\r", end=" ", flush=True)
-    sys.stdout = sys.__stdout__  # 標準出力が狂うかもなので一応初期化。
-    return font
 
 # savefreq個処理してたら一旦保存。
 def Local_snapshot_sfd (font, glyph, proc_cnt, del_file, force=False):
@@ -151,33 +128,47 @@ def Local_snapshot_sfd (font, glyph, proc_cnt, del_file, force=False):
     return del_file
 
 # 大きく縮める際、元から半分サイズのグリフがあるなら交換してしまう。
-def swap_hwglyph(font, glyph, is_propotional, stroke_flag):
+def swap_hwglyph(glyph, swlayer_backup, stroke_flag, base_stroke_width):
     # 元のグリフ幅を控えておく
     orig_width = glyph.width
 
-    #スワップ処理
-    if is_propotional:
-        swap_flag = ys_pswaplist(font, glyph)
+    #バックアップにターゲットのグリフが存在するならレイヤを書換え
+    tgtname = glyph.glyphname
+    if tgtname in swlayer_backup:
+        glyph.foreground = fontforge.layer()
+        glyph.width = swlayer_backup[tgtname]["width"]
+        for contour in swlayer_backup[tgtname]["layer"]:
+            glyph.foreground += contour
+        swap_flag = True
     else:
-        swap_flag = ys_swaplist(font, glyph)
+        swap_flag = False
 
     # 交換が成立していた場合、拡幅処理の影響を減らすため
     if swap_flag:
-        swap_width = glyph.width
+        swap_width = swlayer_backup[tgtname]["width"]
         # 念の為0除算対策
         if swap_width == 0:
              return False
         # 最初から縮小目標とほぼ近い幅のグリフはストロークの対象外にする。
         # ストロークの影響を最小限に留めるために元の幅にまで広げる
-        elif (swap_width / orig_width) < VSHRINK_RATIO * 1.05:
+        elif (swap_width / orig_width) <= VSHRINK_RATIO * 1.05:
             expratio = orig_width / swap_width
             stroke_flag = False
+        elif (swap_width / orig_width) > 1:
+            expratio = 1
+            stroke_flag = True
         else:
             expratio = orig_width / swap_width
-        # 幅統一用の拡幅処理
+        # 基本ストローク幅のセッティング
+        base_stroke_width = STROKE_WIDTH_MIN + STROKE_WIDTH_SF * (1 - (VSHRINK_RATIO / expratio))
+        # 基本ストローク幅は整数かつ偶数に設定する
+        base_stroke_width = (base_stroke_width // 2) * 2
+        if base_stroke_width <= 10:
+            stroke_flag = False
+
         glyph.transform(psMat.scale(expratio, 1),"partialRefs")
         glyph.addExtrema("all")
-    return stroke_flag
+    return stroke_flag, base_stroke_width
 
 # 強制的に全グリフの幅を揃えるパターン専用の処理
 def force_width_norm(glyph, em_size, stroke_flag):
@@ -185,7 +176,7 @@ def force_width_norm(glyph, em_size, stroke_flag):
     if glyph.width < em_size / 3:
          return False
     # 最初から縮小目標とほぼ近い幅のグリフはストロークの対象外にする。
-    elif (glyph.width / em_size) < VSHRINK_RATIO * 1.05:
+    elif (glyph.width / em_size) <= VSHRINK_RATIO * 1.05:
         stroke_flag = False
         expratio = em_size / glyph.width
     # その他は幅をみんな同じに揃える
@@ -333,8 +324,9 @@ def Local_validate_notice(glyph, note, loglevel):
         log_func(f"{INPUT_FONTSTYLES}:{note}のグリフ '{glyph.glyphname}' に開いたパス")
     if glyph.validate(1) & 0x02:  # 外側に時計回のパスがある
         log_func(f"{INPUT_FONTSTYLES}:{note}のグリフ '{glyph.glyphname}' の外側に時計回りのパス")
-    #if glyph.validate(1) & 0x04:  # 交差がある
-    #    logger.info(f"{INPUT_FONTSTYLES}:{note}のグリフ '{glyph.glyphname}' に交差がある")
+    if glyph.validate(1) & 0x04:  # 交差がある
+        # logger.info(f"{INPUT_FONTSTYLES}:{note}のグリフ '{glyph.glyphname}' に交差がある")
+        print(f"{INPUT_FONTSTYLES}:{note}のグリフ '{glyph.glyphname}' に交差がある \r", end=" ", flush=True)
     if glyph.validate(1) & 0x08:  # 参照が不正
         log_func(f"{INPUT_FONTSTYLES}:{note}のグリフ '{glyph.glyphname}' の参照が不正")
     if glyph.validate(1) & 0x10:  # ヒントが不正
@@ -350,14 +342,43 @@ def Local_validate_notice(glyph, note, loglevel):
 #                             メイン関数                             #
 ######################################################################
 def main():
-    # セットアップ
-    font, del_file, temp_file, temp_file_path = setup()
+    # 作業用のディレクトリを作成とログ出力の設定
+    log_suffix = "sfd_verify"
+    mkdir_path = os.path.join(BUILD_FONTS_DIR, f"{log_suffix}_log")
+    os.makedirs(mkdir_path, exist_ok=True)
+
+    # ログ出力の設定
+    logger = local_setup_logger(OUTPUT_NAME, log_suffix)
+
+    # 読み込むファイルとパス確認
+    source_file = shorten_style_rd(INPUT_FONTSTYLES)[0]
+    source_file_path = os.path.join(SOURCE_FONTS_DIR, source_file)
+    print (f"source:{source_file_path} \r", end=" ", flush=True)
+    # フォントを開く
+    font = fontforge.open(source_file_path)
+
+    # 一時ファイル名を付けてパスを確認
+    temp_filename = f"{OUTPUT_NAME}_temp_0.sfd"
+    temp_filepath = os.path.join(BUILD_FONTS_DIR, temp_filename)
+    del_file = temp_filename  # あとで消す時用
+
+    # フォントファイルの保存
+    print(f"フォントの形式を変更して再開する。file:{temp_filepath} \r", end=" ", flush=True)
+    font.save(temp_filepath)
+
+    # フォントを閉じる
+    font.close()
+    import time  # 書き込みが完了するまで少し待つ
+    time.sleep(0.1)
+
+    # フォントファイルを開き直し
+    font = fontforge.open(temp_filepath)
+    print(f"変換後のファイルを開きなおした。 file: {temp_filepath} \r", end=" ", flush=True)
+    # 標準出力が狂うかもなので一応初期化。
+    sys.stdout = sys.__stdout__
 
     # フォントのプロパティを書き換える
     write_property(ini_name, INPUT_FONTSTYLES, VSHRINK_RATIO, font)
-
-    # SFDに変えて開き直し
-    font = save_and_open(font, temp_file_path)
 
     # フォントの元情報を把握
     font_weight = font.os2_weight
@@ -367,7 +388,7 @@ def main():
     mono_all = INPUT_FONTSTYLES.startswith("M")
     is_propotional = INPUT_FONTSTYLES.startswith("P")
 
-    # テスト用スクリプト。テストに不要なグリフを取り除く
+    # テストの際はあらかじめリファレンスを解除
     if TGTGRYPHNAME:
         print("testmode : Now delete the glyphs that are not to be tested.", flush=True)
         # 先に参照解除処理を実行
@@ -375,22 +396,39 @@ def main():
             if glyph.glyphname in TGTGRYPHNAME:
                 glyph.unlinkRef()
 
+    # 交換対象のグリフを確保
+    if VSHRINK_RATIO < 0.66:
+        if is_propotional:
+            swlayer_backup = ys_pswaplist(font)
+        else:
+            swlayer_backup = ys_swaplist(font)
+    elif mono_all:
+        swlayer_backup = ys_mswaplist(font)
+
+    # githubベースで作ると円記号がバックスラッシュになる問題対策
+    font.selection.select("yen")
+    font.copy()
+    font.selection.select("backslash")
+    font.clear()
+    font.paste()
+    font.selection.none()
+
     ######################################################################
-    #　　　　　　　　　　　　　ループ 1（加工）　　　　　　　　　　　　　#
+    #　　　　　　　　　　　　　　　ループ 1　　　　　　　　　　　　　　　#
     ######################################################################
     # カウンタをセット
     proc_cnt: int = 0
 
-    for glyph in font.glyphs():  # 全グリフをループ処理
+    # 全グリフをループ処理
+    for glyph in font.glyphs():
+        # 出力に値しない(カラのグリフ)は無視
+        if not glyph.isWorthOutputting():
+            continue
         if TGTGRYPHNAME:
             if glyph.glyphname not in TGTGRYPHNAME:
                 # テスト対象外のグリフを削除する
                 font.removeGlyph(glyph)
                 continue
-        # 出力に値しない(カラのグリフ)は無視
-        if not glyph.isWorthOutputting():
-            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Glyphs not worthy of output...':<48}\r", end=" ", flush=True)
-            continue
         # コンポジットグリフはなにもしないでスキップ
         if len(glyph.references) > 0:
             print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Composite glyphs are ignored...':<48}\r", end=" ", flush=True)
@@ -401,39 +439,46 @@ def main():
             anomality_repair1(glyph, proc_cnt)
             continue
 
-        # 処理中グリフカウントのインクリメントと中途保存
+        # 処理中グリフカウントのインクリメント
         print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Start processing':<48}\r", end=" ", flush=True)
-        proc_cnt += 1  # 処理中グリフカウントのインクリメント
-        del_file = Local_snapshot_sfd(font, glyph, proc_cnt, del_file)  # 中途保存
+        proc_cnt += 1
+
+        # 中途保存
+        del_file = Local_snapshot_sfd(font, glyph, proc_cnt, del_file)
 
         # 基本ストローク幅のセッティング
         base_stroke_width = STROKE_WIDTH_MIN + STROKE_WIDTH_SF * (1 - VSHRINK_RATIO)
         # 基本ストローク幅は整数かつ偶数に設定する
         base_stroke_width = (base_stroke_width // 2) * 2
-
+        # ウエイトによって拡幅上限を設定
         if font_weight > 500:
-            if base_stroke_width > 40:
-                stroke_width = 40
-            else:
-                stroke_width = base_stroke_width
-        else:
             if base_stroke_width > 80:
-                stroke_width = 80
+                base_stroke_width = 80
+                stroke_width = 50
+            elif base_stroke_width > 50:
+                stroke_width = 50
             else:
                 stroke_width = base_stroke_width
+        elif base_stroke_width > 110:
+            base_stroke_width = 110
+            stroke_width = 80
+        elif base_stroke_width > 80:
+            stroke_width = 80
+        else:
+            stroke_width = base_stroke_width
 
-        if VSHRINK_RATIO >= 0.7:
+        # 一部のウエイトと縮小率の組み合わせは基本的にストロークを避ける
+        if VSHRINK_RATIO >= 0.5:
             stroke_flag = True
-        elif VSHRINK_RATIO < 0.7 and font_weight < 700:
+        elif VSHRINK_RATIO < 0.5 and font_weight < 700:
             stroke_flag = True
-        elif VSHRINK_RATIO >= 0.5 and font_weight < 500:
+        elif VSHRINK_RATIO >= 0.3 and font_weight < 500:
             stroke_flag = True
-        else:   # 狭め方が5割越えてたり、そこに近い値な上で
-                # ウェイトが重いグリフは基本的にストロークから除外。
-                # 拡幅対象はホワイトリストで拾う。
+        else:
             stroke_flag = False
 
-        # ホワイトリスト登録グリフはストロークを許可
+        #例外処理群
+        # ホワイトリスト登録グリフはストロークを許可(おおざっぱ)
         stroke_flag = ys_whitelist(glyph, stroke_flag)
         # ストロークを加えると破綻するグリフはブラックリストで除外処理。
         stroke_flag = ys_blacklist(glyph, stroke_flag)
@@ -442,11 +487,14 @@ def main():
             stroke_width = base_stroke_width
             stroke_flag = True
 
-        # グリフの入替えでイイ感じに拡幅できそうな対象は入替えてしまいましょう。
+        # グリフの入替えでイイ感じに調整できそうな対象は入替えてしまいましょう。
         if VSHRINK_RATIO < 0.66:
-            stroke_flag = swap_hwglyph(font, glyph, is_propotional, stroke_flag)
+            stroke_flag ,base_stroke_width = swap_hwglyph(glyph, swlayer_backup, stroke_flag, base_stroke_width)
+        elif mono_all:
+            stroke_flag ,base_stroke_width = swap_hwglyph(glyph, swlayer_backup, stroke_flag, base_stroke_width)
 
-        if mono_all:  # 強制モノスペース版は先に拡幅処理
+        # 完全等幅版専用の処理
+        if mono_all:
             stroke_flag = force_width_norm(glyph, em_size, stroke_flag)
 
         if stroke_flag and stroke_width > 10:
@@ -457,6 +505,7 @@ def main():
             glyph.transform(psMat.scale(1,8),"partialRefs")
             glyph.addExtrema("all")
 
+            # glyph.background = glyph.foreground
             print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Wider stroke':<48}\r", end=" ", flush=True)
             # ストロークによる拡幅処理を実行する。
             ys_widestroke(glyph, stroke_width, STOROKE_HEIGHT, VSHRINK_RATIO, proc_cnt)
@@ -474,66 +523,38 @@ def main():
             print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Anomality Repair Plus':<48}\r", end=" ", flush=True)
             anomality_repair2(glyph)
 
-
         # 指定の縮小率に従って縦横比変更
         glyph.transform(psMat.scale(VSHRINK_RATIO, 1),"partialRefs")
         glyph.addExtrema("all")
 
+        # 仕上げ前の検査
+        Local_validate_notice(glyph, "仕上げ前", "warning")
+
         # 仕上げ処理
         print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Finish optimization':<48}\r", end=" ", flush=True)
         anomality_repair1(glyph, proc_cnt)
+        glyph.addExtrema("all")
 
-        # Local_validate_notice(glyph, "仕上げ処理後", "warning")  # 仕上げ後の検査(デバッグ用)
+        # 仕上げ後の検査
+        Local_validate_notice(glyph, "仕上げ処理後", "warning")
         print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Process Completed!':<48}\r", end=" ", flush=True)
     ######################################################################
     #                    各グリフのループ処理ここまで                    #
     ######################################################################
     try:
-        # SFDファイルの保存
-        output_sfd = f"{OUTPUT_NAME}.sfd"
-        output_sfd_path = os.path.join(BUILD_FONTS_DIR, output_sfd)
-        print(f"完成したフォントを保存： {output_sfd_path} \r", end=" ", flush=True)
-        font.save(output_sfd_path)  # SFD形式で保存
-
-        # TTFファイルの保存
-        output_ttf = f"{OUTPUT_NAME}.ttf"
-        output_ttf_path = os.path.join(BUILD_FONTS_DIR, output_ttf)
-        print(f"完成したフォントを保存： {output_ttf_path} \r", end=" ", flush=True)
-        font.generate(output_ttf_path)  # TTF形式で保存
-
-        # TTFファイルを開き直し
-        print(f"TTFに変更して再開する。file:{output_ttf_path} \r", end=" ", flush=True)
-        font.close() # SFDフォントを閉じる
-        import time  # 書き込みが完了するまで少し待つ
-        time.sleep(0.1)
-        font = fontforge.open(output_ttf_path) # TTFを開きなおす
-        print(f"TTFを開きなおした。 file: {output_ttf_path} \r", end=" ", flush=True)
-        sys.stdout = sys.__stdout__
-
-        # 最後に全グリフを一斉に見直し
-        for glyph in font.glyphs():
-            if not glyph.isWorthOutputting():
-                continue  # 出力しないグリフはスキップ
-            if len(glyph.references) > 0:
-                print(f"合成グリフをスキップ： {glyph.glyphname} \r", end=" ", flush=True)
-                continue  # コンポジットグリフはスキップ
-            if ys_ignorlist(glyph):
-                # print(f"無視リスト対象のグリフをスキップ： {glyph.glyphname}\r", end=" ", flush=True)
-                continue
-
-            # 仕上げ処理
-            print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Finish optimization':<48}\r", end=" ", flush=True)
-            anomality_repair1(glyph, proc_cnt)
-            Local_validate_notice(glyph, "最終チェック", "warning")
+        # 保存ファイル名を付けてパスを確認
+        output_file = f"{OUTPUT_NAME}.sfd"
+        output_filepath = os.path.join(BUILD_FONTS_DIR, output_file)
+        print(f"作業完了したファイルを保存： {output_filepath} \r", end=" ", flush=True)
+        font.save(output_filepath)  # SFD形式で保存
 
     except IOError as e:
         print(f"保存に失敗しました: {e}")
 
     else:
-        if del_file != f"temp_0_{OUTPUT_NAME}.sfd":
-            del_file_path = os.path.join(BUILD_FONTS_DIR, del_file)
-            print(f"前の一時ファイルを削除： {del_file_path} \r", end=" ", flush=True)
-            os.remove(del_file_path)
+        del_file_path = os.path.join(BUILD_FONTS_DIR, del_file)
+        print(f"前の一時ファイルを削除： {del_file_path} \r", end=" ", flush=True)
+        os.remove(del_file_path)
 
     font.close()
 
