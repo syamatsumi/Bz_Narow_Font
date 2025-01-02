@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set VERSIONS=_v0.5.9.7z
+set VERSIONS=_v0.6.0.7z
 
 set SZIP="C:\Program Files\7-Zip\7z.exe"
 set SCRIPT_DIR=%~dp0
