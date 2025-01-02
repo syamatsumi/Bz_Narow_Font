@@ -4,7 +4,7 @@ $scriptname = "bz_narow_ttfconv"
 $scriptfullname = "{0}.py" -f $scriptname
 
 # 最大同時実行数
-$maxParallel = 15
+$maxParallel = 5
 
 # 実行するコマンドのリスト
 $commands = @(

@@ -141,47 +141,7 @@ def write_property(ini_name, input_fontstyles, vshrink_ratio, font):
             font.os2_weight = 700  # Bold
             macstyle |= (1 << 0)
 
-    # 通常の日本語フォントは半角全角の違いを持つため
-    # 通常使わない属性をここではセット……
-    if MPtype == "M":
-        panose_propotion = 9  # 等幅
-        if vshrink_ratio <= 0.2:
-            font.os2_width = 1    # Ultra-Condensed
-            uqid1 = 1
-            macstyle |= (1 << 5)
-        elif vshrink_ratio <= 0.3:
-            font.os2_width = 2    # Extra-Condensed
-            uqid1 = 2
-            macstyle |= (1 << 5)
-        elif vshrink_ratio <= 0.4:
-            font.os2_width = 3    # Condensed
-            uqid1 = 3
-            macstyle |= (1 << 5)
-        elif vshrink_ratio <= 0.5:
-            font.os2_width = 4    # Semi-Condensed
-            uqid1 = 4
-            macstyle |= (1 << 5)
-        elif vshrink_ratio <= 0.6:
-            font.os2_width = 5    # Medium
-            uqid1 = 5
-        elif vshrink_ratio <= 0.7:
-            font.os2_width = 6    # Semi-Expanded
-            uqid1 = 6
-            macstyle |= (1 << 6)
-        elif vshrink_ratio <= 0.8:
-            font.os2_width = 7    # Expanded
-            uqid1 = 7
-            macstyle |= (1 << 6)
-        elif vshrink_ratio <= 0.9:
-            font.os2_width = 8    # Extra-Expanded
-            uqid1 = 8
-            macstyle |= (1 << 6)
-        else:
-            font.os2_width = 9    # Ultra-Expanded
-            uqid1 = 9
-            macstyle |= (1 << 6)
-
-    elif vshrink_ratio <= 0.2:
+    if vshrink_ratio <= 0.2:
         panose_propotion = 8  # Very Condensed
         font.os2_width = 1    # Ultra-Condensed
         uqid1 = 1

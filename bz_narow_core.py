@@ -434,7 +434,7 @@ def main():
             print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Composite glyphs are ignored...':<48}\r", end=" ", flush=True)
             continue
         # 無視リストにあるグリフは修正試行と仕上げだけしてスキップ
-        if ys_ignorlist(glyph):
+        if ys_ignorlist(glyph) and not mono_all:
             print(f"now:{proc_cnt:<5}:{glyph.glyphname:<15} {'Glyphs on ignore list...':<48}\r", end=" ", flush=True)
             anomality_repair1(glyph, proc_cnt)
             continue

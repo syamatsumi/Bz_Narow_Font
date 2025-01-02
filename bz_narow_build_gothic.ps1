@@ -4,7 +4,7 @@ $scriptname = "bz_narow_core"
 $scriptfullname = "{0}.py" -f $scriptname
 
 # 最大同時実行数
-$maxParallel = 7
+$maxParallel = 4
 
 # 実行するコマンドのリスト
 $commands = @(
